@@ -57,6 +57,7 @@ export default class ConfirmPageContainerContent extends Component {
     toAddress: PropTypes.string,
     transactionType: PropTypes.string,
     isBuyableChain: PropTypes.bool,
+    showingHardwareConnectionContents: PropTypes.bool,
   };
 
   renderContent() {
@@ -133,6 +134,7 @@ export default class ConfirmPageContainerContent extends Component {
       toAddress,
       transactionType,
       isBuyableChain,
+      showingHardwareConnectionContents,
     } = this.props;
 
     const primaryAction = hideUserAcknowledgedGasMissing
@@ -168,7 +170,7 @@ export default class ConfirmPageContainerContent extends Component {
             />
           </div>
         )}
-        <ConfirmPageContainerSummary
+        {showingHardwareConnectionContents ? null : (<ConfirmPageContainerSummary
           className={classnames({
             'confirm-page-container-summary--border':
               !detailsComponent || !dataComponent,
@@ -185,7 +187,7 @@ export default class ConfirmPageContainerContent extends Component {
           hideTitle={hideTitle}
           toAddress={toAddress}
           transactionType={transactionType}
-        />
+        />)}
         {this.renderContent()}
         {!supportsEIP1559V2 &&
           !hasSimulationError &&
