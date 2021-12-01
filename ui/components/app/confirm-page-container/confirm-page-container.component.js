@@ -96,13 +96,11 @@ export default class ConfirmPageContainer extends Component {
     supportsEIP1559V2: PropTypes.bool,
     nativeCurrency: PropTypes.string,
     showBuyModal: PropTypes.func,
-<<<<<<< HEAD
     isBuyableChain: PropTypes.bool,
-=======
     // Hardware
     showingHardwareConnectionContents: PropTypes.bool,
     showingHardwareConnectionAdvancedPopover: PropTypes.bool,
->>>>>>> eadc44796 (Implement hardware connectivity confirmation screens)
+    closeHardwareConnectionAdvancedPopover: PropTypes.func,
   };
 
   render() {
@@ -160,6 +158,7 @@ export default class ConfirmPageContainer extends Component {
       isBuyableChain,
       showingHardwareConnectionContents,
       showingHardwareConnectionAdvancedPopover,
+      closeHardwareConnectionAdvancedPopover,
     } = this.props;
 
     const showAddToAddressDialog =
@@ -345,7 +344,7 @@ export default class ConfirmPageContainer extends Component {
           )}
           {showingHardwareConnectionAdvancedPopover ? (
             <HardwareConnectivityPopover
-              onClose={onHardwareConnectivityClose}
+              onClose={closeHardwareConnectionAdvancedPopover}
             />
           ) : null}
         </div>
