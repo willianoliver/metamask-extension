@@ -18,6 +18,7 @@ import SendGasRow from './send-gas-row';
 export default class SendContent extends Component {
   state = {
     showNicknamePopovers: false,
+    isKnownContractAddress: false,
   };
 
   static contextTypes = {
@@ -38,7 +39,19 @@ export default class SendContent extends Component {
     asset: PropTypes.object,
     to: PropTypes.string,
     assetError: PropTypes.string,
+    recipient: PropTypes.object,
+    tokenAddressList: PropTypes.object,
   };
+
+  componentDidMount() {
+    this.checkContractAddress();
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.recipient !== this.props.recipient) {
+      this.checkContractAddress();
+    }
+  }
 
   render() {
     const {
@@ -86,17 +99,41 @@ export default class SendContent extends Component {
     );
   }
 
+  checkContractAddress = () => {
+    const { recipient, tokenAddressList } = this.props;
+
+    const tokenMetadata = getTokenMetadata(
+      recipient.userInput,
+      tokenAddressList,
+    );
+
+    if (tokenMetadata?.symbol !== undefined && tokenMetadata?.symbol !== '') {
+      this.setState({ isKnownContractAddress: true });
+    }
+  };
+
   maybeRenderAddContact() {
     const { t } = this.context;
-    const { isOwnedAccount, contact = {}, to } = this.props;
-    const { showNicknamePopovers } = this.state;
+    const { isOwnedAccount, contact = {}, to, recipient } = this.props;
+    const { showNicknamePopovers, isKnownContractAddress } = this.state;
 
     if (isOwnedAccount || contact.name) {
-      return null;
+      return recipient.warning === 'knownAddressRecipient' ||
+        isKnownContractAddress ? (
+        <Dialog type="warning" className="send__error-dialog">
+          {t('knownAddressRecipient')}
+        </Dialog>
+      ) : null;
     }
 
     return (
       <>
+        {recipient.warning === 'knownAddressRecipient' ||
+        isKnownContractAddress ? (
+          <Dialog type="warning" className="send__error-dialog">
+            {t('knownAddressRecipient')}
+          </Dialog>
+        ) : null}
         <Dialog
           type="message"
           className="send__dialog"
@@ -104,6 +141,7 @@ export default class SendContent extends Component {
         >
           {t('newAccountDetectedDialogMessage')}
         </Dialog>
+
         {showNicknamePopovers ? (
           <NicknamePopovers
             onClose={() => this.setState({ showNicknamePopovers: false })}
