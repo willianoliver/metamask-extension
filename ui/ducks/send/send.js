@@ -74,6 +74,7 @@ import {
   calcTokenAmount,
   getTokenAddressParam,
   getTokenValueParam,
+  getSymbolAndDecimals,
 } from '../../helpers/utils/token-util';
 import {
   checkExistingAddresses,
@@ -679,6 +680,8 @@ export const initialState = {
     error: null,
     // Warning to display on the address field
     warning: null,
+    // Whether the user has acknowledged a recipient warning
+    recipientWarningAcknowledged: false,
   },
   multiLayerFees: {
     // Layer 1 gas fee total on multi-layer fee networks
@@ -981,7 +984,7 @@ const slice = createSlice({
     },
     updateRecipient: (state, action) => {
       state.recipient.error = null;
-      state.recipient.userInput = state.recipient.userInput ?? '';
+      state.recipient.userInput = '';
       state.recipient.address = action.payload.address ?? '';
       state.recipient.nickname = action.payload.nickname ?? '';
 
@@ -1001,6 +1004,10 @@ const slice = createSlice({
       }
 
       // validate send state
+      slice.caseReducers.validateSendState(state);
+    },
+    acknowledgeRecipientWarning: (state) => {
+      state.recipient.recipientWarningAcknowledged = true;
       slice.caseReducers.validateSendState(state);
     },
     updateDraftTransaction: (state) => {
@@ -1105,47 +1112,57 @@ const slice = createSlice({
       // input field
       state.recipient.userInput = action.payload;
     },
-    validateRecipientUserInput: (state, action) => {
+    updateRecipientWarning: (state, action) => {
+      state.recipient.warning = action.payload;
+    },
+    validateRecipientAddress: (state, action) => {
       const { asset, recipient } = state;
 
       if (
         recipient.mode === RECIPIENT_SEARCH_MODES.MY_ACCOUNTS ||
-        recipient.userInput === '' ||
-        recipient.userInput === null
+        recipient.address === '' ||
+        recipient.address === null
       ) {
         recipient.error = null;
         recipient.warning = null;
       } else {
-        const { chainId, tokens, tokenAddressList } = action.payload;
+        const {
+          chainId,
+          tokens,
+          tokenAddressList,
+          isProbablyAnAssetContract,
+        } = action.payload;
         const assetAddress = asset?.details?.address ?? '';
 
         if (
-          isBurnAddress(recipient.userInput) ||
-          (!isValidHexAddress(recipient.userInput, {
+          isBurnAddress(recipient.address) ||
+          (!isValidHexAddress(recipient.address, {
             mixedCaseUseChecksum: true,
           }) &&
-            !isValidDomainName(recipient.userInput))
+            !isValidDomainName(recipient.address))
         ) {
           recipient.error = isDefaultMetaMaskChain(chainId)
             ? INVALID_RECIPIENT_ADDRESS_ERROR
             : INVALID_RECIPIENT_ADDRESS_NOT_ETH_NETWORK_ERROR;
-        } else if (isOriginContractAddress(recipient.userInput, assetAddress)) {
+        } else if (isOriginContractAddress(recipient.address, assetAddress)) {
           recipient.error = CONTRACT_ADDRESS_ERROR;
         } else {
           recipient.error = null;
         }
         if (
-          isValidHexAddress(recipient.userInput) &&
-          (tokenAddressList.find((address) =>
-            isEqualCaseInsensitive(address, recipient.userInput),
-          ) ||
-            checkExistingAddresses(recipient.userInput, tokens))
+          (isValidHexAddress(recipient.address) &&
+            (tokenAddressList.find((address) =>
+              isEqualCaseInsensitive(address, recipient.address),
+            ) ||
+              checkExistingAddresses(recipient.address, tokens))) ||
+          isProbablyAnAssetContract
         ) {
           recipient.warning = KNOWN_RECIPIENT_ADDRESS_WARNING;
         } else {
           recipient.warning = null;
         }
       }
+      slice.caseReducers.validateSendState(state);
     },
     updateRecipientSearchMode: (state, action) => {
       state.recipient.userInput = '';
@@ -1211,6 +1228,7 @@ const slice = createSlice({
         // 6. State is invalid if gas estimates are loading
         // 7. State is invalid if gasLimit is less than the minimumGasLimit
         // 8. State is invalid if the selected asset is a ERC721
+        // 9. State is invalid if the recipient is a known contract address and the user has not acknowledged the recipient warning
         case Boolean(state.amount.error):
         case Boolean(state.gas.error):
         case Boolean(state.asset.error):
@@ -1222,6 +1240,9 @@ const slice = createSlice({
         case new BigNumber(state.gas.gasLimit, 16).lessThan(
           new BigNumber(state.gas.minimumGasLimit),
         ):
+        case state.recipient.warning === 'loading':
+        case state.recipient.warning === KNOWN_RECIPIENT_ADDRESS_WARNING &&
+          state.recipient.recipientWarningAcknowledged === false:
           state.status = SEND_STATUSES.INVALID;
           break;
         default:
@@ -1332,7 +1353,7 @@ const slice = createSlice({
           state.gas.isGasEstimateLoading = false;
         }
         if (state.stage !== SEND_STAGES.INACTIVE) {
-          slice.caseReducers.validateRecipientUserInput(state, {
+          slice.caseReducers.validateRecipientAddress(state, {
             payload: {
               chainId: action.payload.chainId,
               tokens: action.payload.tokens,
@@ -1395,11 +1416,17 @@ const {
   useDefaultGas,
   useCustomGas,
   updateGasLimit,
-  validateRecipientUserInput,
+  validateRecipientAddress,
   updateRecipientSearchMode,
+  acknowledgeRecipientWarning,
 } = actions;
 
-export { useDefaultGas, useCustomGas, updateGasLimit };
+export {
+  useDefaultGas,
+  useCustomGas,
+  updateGasLimit,
+  acknowledgeRecipientWarning,
+};
 
 // Action Creators
 
@@ -1574,31 +1601,38 @@ export function updateSendAsset({ type, details }) {
  * passing in both the dispatch method and the payload to dispatch, which makes
  * it only applicable for use within action creators.
  */
-const debouncedValidateRecipientUserInput = debounce((dispatch, payload) => {
-  dispatch(validateRecipientUserInput(payload));
+const debouncedValidateRecipientAddress = debounce((dispatch, payload) => {
+  dispatch(validateRecipientAddress(payload));
 }, 300);
 
 /**
  * This method is called to update the user's input into the ENS input field.
  * Once the field is updated, the field will be validated using a debounced
- * version of the validateRecipientUserInput action. This way validation only
+ * version of the validateRecipientAddress action. This way validation only
  * occurs once the user has stopped typing.
  *
  * @param {string} userInput - the value that the user is typing into the field
  */
 export function updateRecipientUserInput(userInput) {
   return async (dispatch, getState) => {
+    dispatch(actions.updateRecipientWarning('loading'));
     await dispatch(actions.updateRecipientUserInput(userInput));
     const state = getState();
     const chainId = getCurrentChainId(state);
     const tokens = getTokens(state);
     const useTokenDetection = getUseTokenDetection(state);
     const tokenAddressList = Object.keys(getTokenList(state));
-    debouncedValidateRecipientUserInput(dispatch, {
+    const { symbol, decimals } = await getSymbolAndDecimals(
+      userInput,
+      tokenAddressList,
+    );
+    const isProbablyAnAssetContract = symbol && decimals !== undefined;
+    debouncedValidateRecipientAddress(dispatch, {
       chainId,
       tokens,
       useTokenDetection,
       tokenAddressList,
+      isProbablyAnAssetContract,
     });
   };
 }
@@ -1643,6 +1677,7 @@ export function updateRecipient({ address, nickname }) {
       }),
     );
     await dispatch(computeEstimatedGasLimit());
+    dispatch(validateRecipientAddress());
   };
 }
 
@@ -1654,7 +1689,7 @@ export function resetRecipientInput() {
     await dispatch(updateRecipientUserInput(''));
     await dispatch(updateRecipient({ address: '', nickname: '' }));
     await dispatch(resetEnsResolution());
-    await dispatch(validateRecipientUserInput());
+    await dispatch(validateRecipientAddress());
   };
 }
 
@@ -2022,6 +2057,10 @@ export function getRecipientUserInput(state) {
 
 export function getRecipient(state) {
   return state[name].recipient;
+}
+
+export function getRecipientWarningAcknowledgement(state) {
+  return state[name].recipient.recipientWarningAcknowledged;
 }
 
 // Overall validity and stage selectors

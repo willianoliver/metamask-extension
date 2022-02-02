@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import PageContainerContent from '../../../components/ui/page-container/page-container-content.component';
 import Dialog from '../../../components/ui/dialog';
+import ActionableMessage from '../../../components/ui/actionable-message';
 import NicknamePopovers from '../../../components/app/modals/nickname-popovers';
 import {
   ETH_GAS_PRICE_FETCH_WARNING_KEY,
@@ -18,7 +19,6 @@ import SendGasRow from './send-gas-row';
 export default class SendContent extends Component {
   state = {
     showNicknamePopovers: false,
-    isKnownContractAddress: false,
   };
 
   static contextTypes = {
@@ -40,18 +40,9 @@ export default class SendContent extends Component {
     to: PropTypes.string,
     assetError: PropTypes.string,
     recipient: PropTypes.object,
-    tokenAddressList: PropTypes.object,
+    acknowledgeRecipientWarning: PropTypes.func,
+    recipientWarningAcknowledged: PropTypes.bool,
   };
-
-  componentDidMount() {
-    this.checkContractAddress();
-  }
-
-  componentDidUpdate(prevProps) {
-    if (prevProps.recipient !== this.props.recipient) {
-      this.checkContractAddress();
-    }
-  }
 
   render() {
     const {
@@ -64,6 +55,8 @@ export default class SendContent extends Component {
       getIsBalanceInsufficient,
       asset,
       assetError,
+      recipient,
+      recipientWarningAcknowledged,
     } = this.props;
 
     let gasError;
@@ -79,6 +72,10 @@ export default class SendContent extends Component {
       asset.type !== ASSET_TYPES.TOKEN &&
       asset.type !== ASSET_TYPES.COLLECTIBLE;
 
+    const showKnownRecipientWarning =
+      recipient.warning === 'knownAddressRecipient';
+    const hideAddContactDialog = recipient.warning === 'loading';
+
     return (
       <PageContainerContent>
         <div className="send-v2__form">
@@ -89,7 +86,12 @@ export default class SendContent extends Component {
             : null}
           {error ? this.renderError(error) : null}
           {warning ? this.renderWarning() : null}
-          {this.maybeRenderAddContact()}
+          {showKnownRecipientWarning && !recipientWarningAcknowledged
+            ? this.renderRecipientWarning()
+            : null}
+          {showKnownRecipientWarning || hideAddContactDialog
+            ? null
+            : this.maybeRenderAddContact()}
           <SendAssetRow />
           <SendAmountRow />
           {networkOrAccountNotSupports1559 ? <SendGasRow /> : null}
@@ -99,41 +101,17 @@ export default class SendContent extends Component {
     );
   }
 
-  checkContractAddress = () => {
-    const { recipient, tokenAddressList } = this.props;
-
-    const tokenMetadata = getTokenMetadata(
-      recipient.userInput,
-      tokenAddressList,
-    );
-
-    if (tokenMetadata?.symbol !== undefined && tokenMetadata?.symbol !== '') {
-      this.setState({ isKnownContractAddress: true });
-    }
-  };
-
   maybeRenderAddContact() {
     const { t } = this.context;
-    const { isOwnedAccount, contact = {}, to, recipient } = this.props;
-    const { showNicknamePopovers, isKnownContractAddress } = this.state;
+    const { isOwnedAccount, contact = {}, to } = this.props;
+    const { showNicknamePopovers } = this.state;
 
     if (isOwnedAccount || contact.name) {
-      return recipient.warning === 'knownAddressRecipient' ||
-        isKnownContractAddress ? (
-        <Dialog type="warning" className="send__error-dialog">
-          {t('knownAddressRecipient')}
-        </Dialog>
-      ) : null;
+      return null;
     }
 
     return (
       <>
-        {recipient.warning === 'knownAddressRecipient' ||
-        isKnownContractAddress ? (
-          <Dialog type="warning" className="send__error-dialog">
-            {t('knownAddressRecipient')}
-          </Dialog>
-        ) : null}
         <Dialog
           type="message"
           className="send__dialog"
@@ -159,6 +137,24 @@ export default class SendContent extends Component {
       <Dialog type="warning" className="send__error-dialog">
         {gasWarning === '' ? t(warning) : t(gasWarning)}
       </Dialog>
+    );
+  }
+
+  renderRecipientWarning() {
+    const { acknowledgeRecipientWarning } = this.props;
+    const { t } = this.context;
+    return (
+      <div className="send__warning-container">
+        <ActionableMessage
+          type="danger"
+          primaryAction={{
+            label: t('tryAnywayOption'),
+            onClick: () => acknowledgeRecipientWarning(),
+          }}
+          message={t('sendingToTokenContractWarning')}
+          roundedButtons
+        />
+      </div>
     );
   }
 
