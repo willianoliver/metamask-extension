@@ -153,7 +153,17 @@ export default class SendContent extends Component {
             label: t('tryAnywayOption'),
             onClick: () => acknowledgeRecipientWarning(),
           }}
-          message={t('sendingToTokenContractWarning')}
+          message={t('sendingToTokenContractWarning', [
+            <a
+              key="contractWarningSupport"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="send__warning-container__link"
+              href="https://metamask.zendesk.com/hc/en-us/articles/360020028092-What-is-the-known-contract-address-warning-"
+            >
+              {t('learnMoreUpperCase')}
+            </a>,
+          ])}
           roundedButtons
         />
       </div>
