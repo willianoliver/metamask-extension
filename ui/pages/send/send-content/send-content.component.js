@@ -147,7 +147,9 @@ export default class SendContent extends Component {
       <div className="send__warning-container">
         <ActionableMessage
           type="danger"
-          primaryAction={{
+          useIcon
+          iconFillColor="#d73a49"
+          primaryActionV2={{
             label: t('tryAnywayOption'),
             onClick: () => acknowledgeRecipientWarning(),
           }}
