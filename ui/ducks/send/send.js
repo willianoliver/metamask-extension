@@ -1677,7 +1677,6 @@ export function updateRecipient({ address, nickname }) {
       }),
     );
     await dispatch(computeEstimatedGasLimit());
-    dispatch(validateRecipientAddress());
   };
 }
 
