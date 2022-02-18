@@ -612,19 +612,22 @@ describe('Send Slice', () => {
       });
     });
 
-    describe('validateRecipientUserInput', () => {
+    describe('validateRecipientAddress', () => {
       it('should set recipient error and warning to null when user input is', () => {
         const noUserInputState = {
           recipient: {
             mode: RECIPIENT_SEARCH_MODES.MY_ACCOUNTS,
-            userInput: '',
+            address: '',
             error: 'someError',
             warning: 'someWarning',
+          },
+          amount: {
+            error: 'Some Amount Error',
           },
         };
 
         const action = {
-          type: 'send/validateRecipientUserInput',
+          type: 'send/validateRecipientAddress',
         };
 
         const result = sendReducer(noUserInputState, action);
@@ -637,11 +640,11 @@ describe('Send Slice', () => {
         const tokenAssetTypeState = {
           ...initialState,
           recipient: {
-            userInput: '0xValidateError',
+            address: '0xValidateError',
           },
         };
         const action = {
-          type: 'send/validateRecipientUserInput',
+          type: 'send/validateRecipientAddress',
           payload: {
             chainId: '',
             tokens: [],
@@ -660,11 +663,11 @@ describe('Send Slice', () => {
         const tokenAssetTypeState = {
           ...initialState,
           recipient: {
-            userInput: '0xValidateError',
+            address: '0xValidateError',
           },
         };
         const action = {
-          type: 'send/validateRecipientUserInput',
+          type: 'send/validateRecipientAddress',
           payload: {
             chainId: '0x55',
             tokens: [],
@@ -684,11 +687,11 @@ describe('Send Slice', () => {
         const tokenAssetTypeState = {
           ...initialState,
           recipient: {
-            userInput: '0x0000000000000000000000000000000000000000',
+            address: '0x0000000000000000000000000000000000000000',
           },
         };
         const action = {
-          type: 'send/validateRecipientUserInput',
+          type: 'send/validateRecipientAddress',
           payload: {
             chainId: '',
             tokens: [],
@@ -712,12 +715,12 @@ describe('Send Slice', () => {
             },
           },
           recipient: {
-            userInput: '0x0dcd5d886577d5081b0c52e242ef29e70be3e7bc',
+            address: '0x0dcd5d886577d5081b0c52e242ef29e70be3e7bc',
           },
         };
 
         const action = {
-          type: 'send/validateRecipientUserInput',
+          type: 'send/validateRecipientAddress',
           payload: {
             chainId: '0x4',
             tokens: [],
@@ -1591,24 +1594,34 @@ describe('Send Slice', () => {
 
         await store.dispatch(updateRecipientUserInput(newUserRecipientInput));
 
-        expect(store.getActions()).toHaveLength(1);
+        expect(store.getActions()).toHaveLength(2);
         expect(store.getActions()[0].type).toStrictEqual(
+          'send/updateRecipientWarning',
+        );
+        expect(store.getActions()[1].type).toStrictEqual(
           'send/updateRecipientUserInput',
         );
-        expect(store.getActions()[0].payload).toStrictEqual(
+        expect(store.getActions()[1].payload).toStrictEqual(
           newUserRecipientInput,
         );
 
         clock.tick(300); // debounce
 
-        expect(store.getActions()).toHaveLength(2);
-        expect(store.getActions()[1].type).toStrictEqual(
-          'send/validateRecipientUserInput',
+        expect(store.getActions()).toHaveLength(3);
+        expect(store.getActions()[0].type).toStrictEqual(
+          'send/updateRecipientWarning',
         );
-        expect(store.getActions()[1].payload).toStrictEqual({
+        expect(store.getActions()[1].type).toStrictEqual(
+          'send/updateRecipientUserInput',
+        );
+        expect(store.getActions()[2].type).toStrictEqual(
+          'send/validateRecipientAddress',
+        );
+        expect(store.getActions()[2].payload).toStrictEqual({
           chainId: '',
           tokens: [],
           useTokenDetection: true,
+          isProbablyAnAssetContract: '',
           tokenAddressList: ['0x514910771af9ca656af840dff83e8264ecf986ca'],
         });
       });
@@ -1881,21 +1894,24 @@ describe('Send Slice', () => {
         await store.dispatch(resetRecipientInput());
         const actionResult = store.getActions();
 
-        expect(actionResult).toHaveLength(6);
+        expect(actionResult).toHaveLength(7);
         expect(actionResult[0].type).toStrictEqual(
+          'send/updateRecipientWarning',
+        );
+        expect(actionResult[0].payload).toStrictEqual('loading');
+        expect(actionResult[1].type).toStrictEqual(
           'send/updateRecipientUserInput',
         );
-        expect(actionResult[0].payload).toStrictEqual('');
-        expect(actionResult[1].type).toStrictEqual('send/updateRecipient');
-        expect(actionResult[2].type).toStrictEqual(
+        expect(actionResult[2].type).toStrictEqual('send/updateRecipient');
+        expect(actionResult[3].type).toStrictEqual(
           'send/computeEstimatedGasLimit/pending',
         );
-        expect(actionResult[3].type).toStrictEqual(
+        expect(actionResult[4].type).toStrictEqual(
           'send/computeEstimatedGasLimit/rejected',
         );
-        expect(actionResult[4].type).toStrictEqual('ENS/resetEnsResolution');
-        expect(actionResult[5].type).toStrictEqual(
-          'send/validateRecipientUserInput',
+        expect(actionResult[5].type).toStrictEqual('ENS/resetEnsResolution');
+        expect(actionResult[6].type).toStrictEqual(
+          'send/validateRecipientAddress',
         );
       });
     });
