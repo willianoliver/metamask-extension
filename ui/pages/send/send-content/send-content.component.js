@@ -11,6 +11,7 @@ import {
   INSUFFICIENT_FUNDS_FOR_GAS_ERROR_KEY,
 } from '../../../helpers/constants/error-keys';
 import { ASSET_TYPES } from '../../../../shared/constants/transaction';
+import { CONTRACT_ADDRESS_LINK } from '../../../helpers/constants/common';
 import SendAmountRow from './send-amount-row';
 import SendHexDataRow from './send-hex-data-row';
 import SendAssetRow from './send-asset-row';
@@ -151,7 +152,7 @@ export default class SendContent extends Component {
           iconFillColor="#d73a49"
           primaryActionV2={{
             label: t('tryAnywayOption'),
-            onClick: () => acknowledgeRecipientWarning(),
+            onClick: acknowledgeRecipientWarning,
           }}
           message={t('sendingToTokenContractWarning', [
             <a
@@ -159,7 +160,7 @@ export default class SendContent extends Component {
               target="_blank"
               rel="noopener noreferrer"
               className="send__warning-container__link"
-              href="https://metamask.zendesk.com/hc/en-us/articles/360020028092-What-is-the-known-contract-address-warning-"
+              href={CONTRACT_ADDRESS_LINK}
             >
               {t('learnMoreUpperCase')}
             </a>,
