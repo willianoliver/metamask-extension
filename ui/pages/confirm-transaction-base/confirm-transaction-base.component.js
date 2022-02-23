@@ -640,6 +640,7 @@ export default class ConfirmTransactionBase extends Component {
               this.setState({
                 showingHardwareConnectionAdvancedPopover: false,
                 showingHardwareConnectionContents: false,
+                hardwareIsReady: true,
               });
             }}
             onAdvancedClick={() => {
