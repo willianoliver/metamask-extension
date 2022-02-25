@@ -175,11 +175,6 @@ export default class ConfirmPageContainer extends Component {
     const networkName = NETWORK_TO_NAME_MAP[currentTransaction.chainId];
 
     const { t } = this.context;
-    /* ToDo:  We need this method from elevated component */
-    // eslint-disable-next-line no-unused-vars
-    const onHardwareConnectivityClose = () => {
-      console.log('Closing hardware connectivity');
-    };
 
     return (
       <GasFeeContextProvider transaction={currentTransaction}>
