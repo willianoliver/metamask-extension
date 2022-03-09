@@ -30,28 +30,28 @@ describe('Add a custom token from a dapp', function () {
         await driver.fill('#password', 'correct horse battery staple');
         await driver.press('#password', driver.Key.ENTER);
 
-    windowHandles = await driver.getAllWindowHandles();
-    extension = windowHandles[0];
-    await driver.closeAllWindowHandlesExcept([extension]);
-    await driver.clickElement('.app-header__logo-container');
+        windowHandles = await driver.getAllWindowHandles();
+        extension = windowHandles[0];
+        await driver.closeAllWindowHandlesExcept([extension]);
+        await driver.clickElement('.app-header__logo-container');
 
-    // connects the dapp
-    await driver.openNewPage('http://127.0.0.1:8080/');
-    await driver.clickElement({ text: 'Connect', tag: 'button' });
-    await driver.waitUntilXWindowHandles(3);
-    windowHandles = await driver.getAllWindowHandles();
-    extension = windowHandles[0];
-    dapp = await driver.switchToWindowWithTitle(
-      'E2E Test Dapp',
-      windowHandles,
-    );
-    popup = windowHandles.find(
-      (handle) => handle !== extension && handle !== dapp,
-    );
-    await driver.switchToWindow(popup);
-    await driver.clickElement({ text: 'Next', tag: 'button' });
-    await driver.clickElement({ text: 'Connect', tag: 'button' });
-    await driver.waitUntilXWindowHandles(2);
+        // connects the dapp
+        await driver.openNewPage('http://127.0.0.1:8080/');
+        await driver.clickElement({ text: 'Connect', tag: 'button' });
+        await driver.waitUntilXWindowHandles(3);
+        windowHandles = await driver.getAllWindowHandles();
+        extension = windowHandles[0];
+        dapp = await driver.switchToWindowWithTitle(
+          'E2E Test Dapp',
+          windowHandles,
+        );
+        popup = windowHandles.find(
+          (handle) => handle !== extension && handle !== dapp,
+        );
+        await driver.switchToWindow(popup);
+        await driver.clickElement({ text: 'Next', tag: 'button' });
+        await driver.clickElement({ text: 'Connect', tag: 'button' });
+        await driver.waitUntilXWindowHandles(2);
         await driver.switchToWindow(dapp);
         // create token
         await driver.waitForSelector({ text: 'Create Token', tag: 'button' });
@@ -90,8 +90,8 @@ describe('Add a custom token from a dapp', function () {
         await driver.fill('#custom-address', tokenAddress);
         await driver.clickElement({ text: 'Add Custom Token', tag: 'button' });
         await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
-  
-        //renders balance for newly created token
+
+        // renders balance for newly created token
         await driver.waitForSelector('.app-header__logo-container');
         await driver.clickElement('.app-header__logo-container');
         await driver.clickElement({ tag: 'button', text: 'Assets' });
@@ -105,7 +105,6 @@ describe('Add a custom token from a dapp', function () {
   });
 });
 
-/*
 describe('Approves a custom token from dapp', function () {
   let windowHandles;
   let extension;
@@ -121,7 +120,7 @@ describe('Approves a custom token from dapp', function () {
       },
     ],
   };
-  it('approves an already created token', async function () {
+  it('approves an already created token and displays the token approval data', async function () {
     await withFixtures(
       {
         dapp: true,
@@ -171,77 +170,7 @@ describe('Approves a custom token from dapp', function () {
         await driver.waitForSelector({ text: 'Approve Tokens', tag: 'button' });
         await driver.clickElement({ text: 'Approve Tokens', tag: 'button' });
 
-        await driver.switchToWindow(extension);
-
-        await driver.clickElement({ tag: 'button', text: 'Activity' });
-
-        await driver.wait(async () => {
-          const pendingTxes = await driver.findElements(
-            '.transaction-list-item',
-          );
-          return pendingTxes.length === 2;
-        }, 10000);
-
-        await driver.waitForSelector({
-          // Selects only the very first transaction list item immediately following the 'Pending' header
-          css:
-            '.transaction-list__pending-transactions .transaction-list__header + .transaction-list-item .list-item__heading',
-          text: 'Approve Token spend limit',
-        });
-      },
-    );
-  });
-
-  it('displays the token approval data', async function () {
-    await withFixtures(
-      {
-        dapp: true,
-        fixtures: 'imported-account',
-        ganacheOptions,
-        title: this.test.title,
-      },
-      async ({ driver }) => {
-        await driver.navigate();
-        await driver.fill('#password', 'correct horse battery staple');
-        await driver.press('#password', driver.Key.ENTER);
-
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        await driver.closeAllWindowHandlesExcept([extension]);
-        await driver.clickElement('.app-header__logo-container');
-
-        // connects the dapp
-        await driver.openNewPage('http://127.0.0.1:8080/');
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(3);
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        dapp = await driver.switchToWindowWithTitle(
-          'E2E Test Dapp',
-          windowHandles,
-        );
-        popup = windowHandles.find(
-          (handle) => handle !== extension && handle !== dapp,
-        );
-
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Next', tag: 'button' });
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(2);
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Create Token', tag: 'button' });
-        await driver.clickElement({ text: 'Create Token', tag: 'button' });
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Confirm', tag: 'button' });
-
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Approve Tokens', tag: 'button' });
-        await driver.clickElement({ text: 'Approve Tokens', tag: 'button' });
-
+        // displays the token approval data
         windowHandles = await driver.waitUntilXWindowHandles(3);
         popup = windowHandles[2];
 
@@ -269,11 +198,30 @@ describe('Approves a custom token from dapp', function () {
             /0x095ea7b30000000000000000000000009bc5baf874d2da8d216ae9f137804184ee5afef4/u,
           ),
         );
+        await driver.clickElement({ text: 'Confirm', tag: 'button' });
+
+        await driver.switchToWindow(extension);
+
+        await driver.clickElement({ tag: 'button', text: 'Activity' });
+
+        await driver.wait(async () => {
+          const pendingTxes = await driver.findElements(
+            '.transaction-list-item',
+          );
+          return pendingTxes.length === 2;
+        }, 10000);
+
+        await driver.waitForSelector({
+          // Selects only the very first transaction list item immediately following the 'Pending' header
+          css:
+            '.transaction-list__pending-transactions .transaction-list__header + .transaction-list-item .list-item__heading',
+          text: 'Approve TST spend limit',
+        });
       },
     );
   });
 
-  it('customizes gas', async function () {
+  it('customizes gas, edit permissions and checks transaction in transaction list', async function () {
     await withFixtures(
       {
         dapp: true,
@@ -343,65 +291,8 @@ describe('Approves a custom token from dapp', function () {
           '.confirm-approve-content__transaction-details-content__secondary-fee',
         );
         assert.equal(await gasFeeInEth.getText(), '0.0006 ETH');
-      },
-    );
-  });
 
-  it('edits the permission', async function () {
-    await withFixtures(
-      {
-        dapp: true,
-        fixtures: 'imported-account',
-        ganacheOptions,
-        title: this.test.title,
-      },
-      async ({ driver }) => {
-        await driver.navigate();
-        await driver.fill('#password', 'correct horse battery staple');
-        await driver.press('#password', driver.Key.ENTER);
-
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        await driver.closeAllWindowHandlesExcept([extension]);
-        await driver.clickElement('.app-header__logo-container');
-
-        // connects the dapp
-        await driver.openNewPage('http://127.0.0.1:8080/');
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(3);
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        dapp = await driver.switchToWindowWithTitle(
-          'E2E Test Dapp',
-          windowHandles,
-        );
-        popup = windowHandles.find(
-          (handle) => handle !== extension && handle !== dapp,
-        );
-
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Next', tag: 'button' });
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(2);
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Create Token', tag: 'button' });
-        await driver.clickElement({ text: 'Create Token', tag: 'button' });
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Confirm', tag: 'button' });
-
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Approve Tokens', tag: 'button' });
-        await driver.clickElement({ text: 'Approve Tokens', tag: 'button' });
-
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-
-        // switch to popup
-        await driver.switchToWindow(popup);
+        // edits the permission
         await driver.clickElement({
           css: '.confirm-approve-content__small-blue-text',
           text: 'View full transaction details',
@@ -427,163 +318,11 @@ describe('Approves a custom token from dapp', function () {
         );
         const amountDiv = permissionInfo[0];
         assert.equal(await amountDiv.getText(), '5 TST');
-      },
-    );
-  });
 
-  it('submits the transaction', async function () {
-    await withFixtures(
-      {
-        dapp: true,
-        fixtures: 'imported-account',
-        ganacheOptions,
-        title: this.test.title,
-      },
-      async ({ driver }) => {
-        await driver.navigate();
-        await driver.fill('#password', 'correct horse battery staple');
-        await driver.press('#password', driver.Key.ENTER);
-
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        await driver.closeAllWindowHandlesExcept([extension]);
-        await driver.clickElement('.app-header__logo-container');
-
-        // connects the dapp
-        await driver.openNewPage('http://127.0.0.1:8080/');
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(3);
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        dapp = await driver.switchToWindowWithTitle(
-          'E2E Test Dapp',
-          windowHandles,
-        );
-        popup = windowHandles.find(
-          (handle) => handle !== extension && handle !== dapp,
-        );
-
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Next', tag: 'button' });
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(2);
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Create Token', tag: 'button' });
-        await driver.clickElement({ text: 'Create Token', tag: 'button' });
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-        await driver.switchToWindow(popup);
+        // submits the transaction
         await driver.clickElement({ text: 'Confirm', tag: 'button' });
 
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Approve Tokens', tag: 'button' });
-        await driver.clickElement({ text: 'Approve Tokens', tag: 'button' });
-
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-
-        // switch to popup
-        await driver.switchToWindow(popup);
-        await driver.clickElement({
-          css: '.confirm-approve-content__small-blue-text',
-          text: 'View full transaction details',
-        });
-        const editButtons = await driver.findClickableElements(
-          '.confirm-approve-content__small-blue-text',
-        );
-        await editButtons[2].click();
-
-        // wait for permission modal to be visible
-        await driver.findVisibleElement('span .modal');
-        const radioButtons = await driver.findClickableElements(
-          '.edit-approval-permission__edit-section__radio-button',
-        );
-        await radioButtons[1].click();
-        await driver.fill('input', '5');
-        await driver.clickElement({ text: 'Save', tag: 'button' });
-
-        await driver.clickElement({ text: 'Confirm', tag: 'button' });
-      },
-    );
-  });
-
-  it('finds the transaction in the transactions list', async function () {
-    await withFixtures(
-      {
-        dapp: true,
-        fixtures: 'imported-account',
-        ganacheOptions,
-        title: this.test.title,
-      },
-      async ({ driver }) => {
-        await driver.navigate();
-        await driver.fill('#password', 'correct horse battery staple');
-        await driver.press('#password', driver.Key.ENTER);
-
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        await driver.closeAllWindowHandlesExcept([extension]);
-        await driver.clickElement('.app-header__logo-container');
-
-        // connects the dapp
-        await driver.openNewPage('http://127.0.0.1:8080/');
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(3);
-        windowHandles = await driver.getAllWindowHandles();
-        extension = windowHandles[0];
-        dapp = await driver.switchToWindowWithTitle(
-          'E2E Test Dapp',
-          windowHandles,
-        );
-        popup = windowHandles.find(
-          (handle) => handle !== extension && handle !== dapp,
-        );
-
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Next', tag: 'button' });
-        await driver.clickElement({ text: 'Connect', tag: 'button' });
-        await driver.waitUntilXWindowHandles(2);
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Create Token', tag: 'button' });
-        await driver.clickElement({ text: 'Create Token', tag: 'button' });
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-        await driver.switchToWindow(popup);
-        await driver.clickElement({ text: 'Confirm', tag: 'button' });
-
-        await driver.switchToWindow(dapp);
-
-        await driver.waitForSelector({ text: 'Approve Tokens', tag: 'button' });
-        await driver.clickElement({ text: 'Approve Tokens', tag: 'button' });
-
-        windowHandles = await driver.waitUntilXWindowHandles(3);
-        popup = windowHandles[2];
-
-        // switch to popup
-        await driver.switchToWindow(popup);
-        await driver.clickElement({
-          css: '.confirm-approve-content__small-blue-text',
-          text: 'View full transaction details',
-        });
-        const editButtons = await driver.findClickableElements(
-          '.confirm-approve-content__small-blue-text',
-        );
-        await editButtons[2].click();
-
-        // wait for permission modal to be visible
-        await driver.findVisibleElement('span .modal');
-        const radioButtons = await driver.findClickableElements(
-          '.edit-approval-permission__edit-section__radio-button',
-        );
-        await radioButtons[1].click();
-        await driver.fill('input', '5');
-        await driver.clickElement({ text: 'Save', tag: 'button' });
-
-        await driver.clickElement({ text: 'Confirm', tag: 'button' });
-
+        // finds the transaction in transaction list
         await driver.switchToWindow(extension);
         await driver.clickElement({ tag: 'button', text: 'Activity' });
         await driver.waitForSelector({
@@ -596,4 +335,3 @@ describe('Approves a custom token from dapp', function () {
     );
   });
 });
-*/
