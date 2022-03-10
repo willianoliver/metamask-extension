@@ -99,6 +99,7 @@ export default function ImportSRP({ submitSecretRecoveryPhrase }) {
             )}
           </div>
           <Button
+            className="import-srp__actions__button"
             type="primary"
             data-testid="import-srp-confirm"
             large

@@ -1,5 +1,12 @@
 .import-srp {
-  width: 625px;
+  @media screen and (min-width: $break-large) {
+    width: 625px;
+    margin-top: 40px;
+  }
+
+  @media screen and (max-width: $break-small) {
+    margin-inline-start: 5px;
+  }
 
   &__header {
     display: flex;
@@ -32,6 +39,10 @@
       @include H6;
 
       margin-bottom: 12px;
+    }
+
+    &__button {
+      margin-bottom: 185px;
     }
   }
 }
