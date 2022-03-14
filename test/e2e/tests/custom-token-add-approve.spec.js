@@ -80,7 +80,10 @@ describe('Add a custom token from a dapp', function () {
 
         // imports custom token from extension
         await driver.switchToWindow(extension);
+
         await driver.clickElement(`[data-testid="home__asset-tab"]`);
+        await driver.clickElement({ tag: 'button', text: 'Assets' });
+
         await driver.clickElement({ text: 'import tokens', tag: 'a' });
         await driver.clickElement({
           text: 'Custom Token',
@@ -88,7 +91,13 @@ describe('Add a custom token from a dapp', function () {
         });
         await driver.waitForSelector('#custom-address');
         await driver.fill('#custom-address', tokenAddress);
+        await driver.waitForSelector('#custom-symbol');
+        await driver.waitForSelector({
+          text: 'Add Custom Token',
+          tag: 'button',
+        });
         await driver.clickElement({ text: 'Add Custom Token', tag: 'button' });
+        // await driver.waitForSelector('.confirm-import-token__balance');
         await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
 
         // renders balance for newly created token
@@ -215,7 +224,7 @@ describe('Approves a custom token from dapp', function () {
           // Selects only the very first transaction list item immediately following the 'Pending' header
           css:
             '.transaction-list__pending-transactions .transaction-list__header + .transaction-list-item .list-item__heading',
-          text: 'Approve TST spend limit',
+          text: 'Approve Token spend limit',
         });
       },
     );
@@ -329,7 +338,7 @@ describe('Approves a custom token from dapp', function () {
           // Select only the heading of the first entry in the transaction list.
           css:
             '.transaction-list__completed-transactions .transaction-list-item:first-child .list-item__heading',
-          text: 'Approve TST spend limit',
+          text: 'Approve Token spend limit',
         });
       },
     );
