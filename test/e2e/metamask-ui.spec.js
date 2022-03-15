@@ -19,7 +19,6 @@ const dappPort = 8080;
 describe('MetaMask', function () {
   let driver;
   let dappServer;
-  let tokenAddress;
 
   const testSeedPhrase =
     'phrase upgrade clock rough situate wedding elder clever doctor stamp excess tent';
