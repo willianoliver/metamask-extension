@@ -100,7 +100,7 @@ describe('Create token, approve token and approve token without gas', function (
             text: 'Add Custom Token',
             tag: 'button',
           });
-          // await driver.waitForSelector('.confirm-import-token__balance');
+          await driver.waitForSelector('.confirm-import-token__balance');
           await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
 
           // renders balance for newly created token
