@@ -92,9 +92,9 @@
 
   &__header {
     display: flex;
-    flex-flow: row nowrap;
     justify-content: space-between;
     align-items: center;
+    height: 100%;
   }
 
   & &__lock-button {
@@ -102,6 +102,23 @@
 
     padding: 3.5px 5px;
     width: 59px;
+
+    &:hover {
+      background-color: rgba($dusty-gray, 0.05);
+    }
+
+    &:active {
+      background-color: rgba($dusty-gray, 0.1);
+    }
+  }
+
+  &__refresh-button {
+    color: var(--color-primary-default);
+  }
+
+  &__item-icon {
+    width: 16px;
+    height: 16px;
   }
 
   &__accounts-container {
@@ -176,6 +193,10 @@
         margin-top: -5px;
       }
     }
+  }
+
+  &__loading-overlay__spinner {
+    display: flex;
   }
 
   &__account-info {

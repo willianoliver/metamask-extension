@@ -6,6 +6,7 @@ import {
   showAccountDetail,
   lockMetamask,
   hideWarning,
+  autoDetectAccounts,
 } from '../../../store/actions';
 import {
   getAddressConnectedSubjectMap,
@@ -46,6 +47,9 @@ function mapDispatchToProps(dispatch) {
     showAccountDetail: (address) => {
       dispatch(showAccountDetail(address));
       dispatch(toggleAccountMenu());
+    },
+    autoDetectAccounts: () => {
+      return dispatch(autoDetectAccounts());
     },
     lockMetamask: () => {
       dispatch(lockMetamask());

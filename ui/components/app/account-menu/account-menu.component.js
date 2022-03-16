@@ -33,6 +33,16 @@ import IconPlus from '../../ui/icon/icon-plus';
 import IconImport from '../../ui/icon/icon-import';
 
 import Button from '../../ui/button';
+import Box from '../../ui/box';
+import {
+  ALIGN_ITEMS,
+  BLOCK_SIZES,
+  DISPLAY,
+  FLEX_DIRECTION,
+  FLEX_WRAP,
+  JUSTIFY_CONTENT,
+} from '../../../helpers/constants/design-system';
+import Spinner from '../../ui/spinner';
 import KeyRingLabel from './keyring-label';
 
 export function AccountMenuItem(props) {
@@ -83,6 +93,7 @@ export default class AccountMenu extends Component {
     toggleAccountMenu: PropTypes.func,
     addressConnectedSubjectMap: PropTypes.object,
     originOfCurrentTab: PropTypes.string,
+    autoDetectAccounts: PropTypes.func,
   };
 
   accountsRef;
@@ -90,6 +101,7 @@ export default class AccountMenu extends Component {
   state = {
     shouldShowScrollButton: false,
     searchQuery: '',
+    isLoading: false,
   };
 
   addressFuse = new Fuse([], {
@@ -296,6 +308,8 @@ export default class AccountMenu extends Component {
       toggleAccountMenu,
       lockMetamask,
       history,
+      accounts,
+      autoDetectAccounts,
     } = this.props;
 
     if (!isAccountMenuOpen) {
@@ -312,33 +326,64 @@ export default class AccountMenu extends Component {
     return (
       <div className="account-menu">
         <div className="account-menu__close-area" onClick={toggleAccountMenu} />
-        <AccountMenuItem className="account-menu__header">
-          {t('myAccounts')}
-          <Button
-            className="account-menu__lock-button"
-            type="secondary"
-            onClick={() => {
-              lockMetamask();
-              history.push(DEFAULT_ROUTE);
-            }}
-          >
-            {t('lock')}
-          </Button>
-        </AccountMenuItem>
-        <div className="account-menu__divider" />
-        <div className="account-menu__accounts-container">
-          {shouldShowAccountsSearch ? this.renderAccountsSearch() : null}
-          <div
-            className="account-menu__accounts"
-            onScroll={this.onScroll}
-            ref={(ref) => {
-              this.accountsRef = ref;
-            }}
-          >
-            {this.renderAccounts()}
-          </div>
-          {this.renderScrollButton()}
-        </div>
+        {this.state.isLoading ? (
+          <Spinner
+            color="#F7C06C"
+            className="account-menu__loading-overlay__spinner"
+          />
+        ) : (
+          <>
+            <AccountMenuItem className="account-menu__header">
+              <Box
+                width={BLOCK_SIZES.FULL}
+                display={DISPLAY.FLEX}
+                alignItems={ALIGN_ITEMS.CENTER}
+                flexWrap={FLEX_WRAP.NO_WRAP}
+                flexDirection={FLEX_DIRECTION.ROW}
+                justifyContent={JUSTIFY_CONTENT.SPACE_BETWEEN}
+              >
+                {`${t('myAccounts')} (${accounts.length})`}
+                <Button
+                  className="account-menu__lock-button"
+                  onClick={() => {
+                    lockMetamask();
+                    history.push(DEFAULT_ROUTE);
+                  }}
+                >
+                  {t('lock')}
+                </Button>
+              </Box>
+              <Box>
+                <div
+                  className="account-menu__refresh-button"
+                  onClick={async () => {
+                    this.setState({ isLoading: true });
+                    await autoDetectAccounts();
+                    setTimeout(() => {
+                      this.setState({ isLoading: false });
+                    }, 1000);
+                  }}
+                >
+                  {t('refreshAccounts')}
+                </div>
+              </Box>
+            </AccountMenuItem>
+            <div className="account-menu__divider" />
+            <div className="account-menu__accounts-container">
+              {shouldShowAccountsSearch ? this.renderAccountsSearch() : null}
+              <div
+                className="account-menu__accounts"
+                onScroll={this.onScroll}
+                ref={(ref) => {
+                  this.accountsRef = ref;
+                }}
+              >
+                {this.renderAccounts()}
+              </div>
+              {this.renderScrollButton()}
+            </div>
+          </>
+        )}
         <div className="account-menu__divider" />
         <AccountMenuItem
           onClick={() => {
