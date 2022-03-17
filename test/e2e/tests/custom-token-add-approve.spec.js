@@ -92,6 +92,7 @@ describe('Create token, approve token and approve token without gas', function (
           await driver.waitForSelector('#custom-address');
           await driver.fill('#custom-address', tokenAddress);
           await driver.waitForSelector('#custom-symbol');
+          await driver.waitForSelector('#custom-decimals');
           await driver.waitForSelector({
             text: 'Add Custom Token',
             tag: 'button',
@@ -100,7 +101,11 @@ describe('Create token, approve token and approve token without gas', function (
             text: 'Add Custom Token',
             tag: 'button',
           });
-          await driver.waitForSelector('.confirm-import-token__balance');
+
+          await driver.waitForSelector({
+            text: 'Import Tokens',
+            tag: 'button',
+          });
           await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
 
           // renders balance for newly created token
