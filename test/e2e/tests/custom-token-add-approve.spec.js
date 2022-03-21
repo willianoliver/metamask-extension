@@ -106,7 +106,6 @@ describe('Create token, approve token and approve token without gas', function (
             text: 'Import Tokens',
             tag: 'button',
           });
-          await driver.waitForSelector({ text: 'Import Tokens', tag: 'button' });
           await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
 
           // renders balance for newly created token
