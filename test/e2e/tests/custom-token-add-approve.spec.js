@@ -102,11 +102,11 @@ describe('Create token, approve token and approve token without gas', function (
             tag: 'button',
           });
 
-          const importBtn = await driver.waitForSelector({
+          await driver.waitForSelector({
             text: 'Import Tokens',
-            tag: 'button'
+            tag: 'button',
           });
-          await driver.clickElement({ text: 'Import Tokens', tag: 'button'});
+          await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
 
           // renders balance for newly created token
           await driver.waitForSelector('.app-header__logo-container');
