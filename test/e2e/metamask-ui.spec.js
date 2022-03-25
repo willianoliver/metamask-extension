@@ -224,7 +224,7 @@ describe('MetaMask', function () {
       await driver.delay(regularDelayMs);
     });
   });
-  
+
   describe('Add a custom token from a dapp', function () {
     let windowHandles;
     let extension;
@@ -329,7 +329,6 @@ describe('MetaMask', function () {
       await driver.delay(regularDelayMs);
     });
   });
-
 
   describe('Send token from inside MetaMask', function () {
     it('starts to send a transaction', async function () {
