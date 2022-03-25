@@ -19,6 +19,7 @@ const dappPort = 8080;
 describe('MetaMask', function () {
   let driver;
   let dappServer;
+  let tokenAddress;
 
   const testSeedPhrase =
     'phrase upgrade clock rough situate wedding elder clever doctor stamp excess tent';
@@ -223,6 +224,112 @@ describe('MetaMask', function () {
       await driver.delay(regularDelayMs);
     });
   });
+  
+  describe('Add a custom token from a dapp', function () {
+    let windowHandles;
+    let extension;
+    let popup;
+    let dapp;
+    it('connects the dapp', async function () {
+      await driver.openNewPage('http://127.0.0.1:8080/');
+      await driver.delay(regularDelayMs);
+
+      await driver.clickElement({ text: 'Connect', tag: 'button' });
+
+      await driver.delay(regularDelayMs);
+
+      await driver.waitUntilXWindowHandles(3);
+      windowHandles = await driver.getAllWindowHandles();
+
+      extension = windowHandles[0];
+      dapp = await driver.switchToWindowWithTitle(
+        'E2E Test Dapp',
+        windowHandles,
+      );
+      popup = windowHandles.find(
+        (handle) => handle !== extension && handle !== dapp,
+      );
+
+      await driver.switchToWindow(popup);
+
+      await driver.delay(regularDelayMs);
+
+      await driver.clickElement({ text: 'Next', tag: 'button' });
+      await driver.clickElement({ text: 'Connect', tag: 'button' });
+
+      await driver.waitUntilXWindowHandles(2);
+      await driver.switchToWindow(dapp);
+      await driver.delay(regularDelayMs);
+    });
+
+    it('creates a new token', async function () {
+      await driver.clickElement({ text: 'Create Token', tag: 'button' });
+      windowHandles = await driver.waitUntilXWindowHandles(3);
+
+      popup = windowHandles[2];
+      await driver.switchToWindow(popup);
+      await driver.delay(regularDelayMs);
+      await driver.clickElement({ text: 'Edit', tag: 'button' });
+
+      const inputs = await driver.findElements('input[type="number"]');
+      const gasLimitInput = inputs[0];
+      const gasPriceInput = inputs[1];
+      await gasLimitInput.fill('4700000');
+      await gasPriceInput.fill('20');
+      await driver.delay(veryLargeDelayMs);
+      await driver.clickElement({ text: 'Save', tag: 'button' });
+      await driver.clickElement({ text: 'Confirm', tag: 'button' });
+
+      await driver.delay(regularDelayMs);
+
+      await driver.switchToWindow(dapp);
+      await driver.delay(tinyDelayMs);
+
+      const tokenContractAddress = await driver.waitForSelector({
+        css: '#tokenAddress',
+        text: '0x',
+      });
+      tokenAddress = await tokenContractAddress.getText();
+
+      await driver.delay(regularDelayMs);
+      await driver.closeAllWindowHandlesExcept([extension, dapp]);
+      await driver.delay(regularDelayMs);
+      await driver.switchToWindow(extension);
+      await driver.delay(largeDelayMs);
+    });
+
+    it('clicks on the import tokens button', async function () {
+      await driver.clickElement(`[data-testid="home__asset-tab"]`);
+      await driver.clickElement({ text: 'import tokens', tag: 'a' });
+      await driver.delay(regularDelayMs);
+    });
+
+    it('picks the newly created Test token', async function () {
+      await driver.clickElement({
+        text: 'Custom Token',
+        tag: 'button',
+      });
+      await driver.delay(regularDelayMs);
+
+      await driver.fill('#custom-address', tokenAddress);
+      await driver.delay(regularDelayMs);
+
+      await driver.clickElement({ text: 'Add Custom Token', tag: 'button' });
+      await driver.delay(regularDelayMs);
+
+      await driver.clickElement({ text: 'Import Tokens', tag: 'button' });
+      await driver.delay(regularDelayMs);
+    });
+
+    it('renders the balance for the new token', async function () {
+      await driver.waitForSelector({
+        css: '.wallet-overview .token-overview__primary-balance',
+        text: '10 TST',
+      });
+      await driver.delay(regularDelayMs);
+    });
+  });
+
 
   describe('Send token from inside MetaMask', function () {
     it('starts to send a transaction', async function () {
