@@ -227,7 +227,7 @@ describe('Editing Confirm Transaction', function () {
         const windowHandles = await getWindowHandles(driver, 3);
         await driver.switchToWindow(windowHandles.popup);
         await driver.delay(largeDelayMs);
-        await driver.waitForSelector({ text: '🌐' });
+        await driver.waitForSelector({ text: '⚙️' });
         await driver.waitForSelector({
           text: 'Site suggested',
         });
