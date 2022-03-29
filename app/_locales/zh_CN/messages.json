@@ -161,10 +161,6 @@
   "advancedGasFeeDefaultOptIn": {
     "message": "保存$1为“高级”默认值"
   },
-  "advancedGasFeeDefaultOptOut": {
-    "message": "总是使用这些值和高级设置为默认值。",
-    "description": "$1 is the current network"
-  },
   "advancedGasFeeModalTitle": {
     "message": "高级燃料费"
   },
