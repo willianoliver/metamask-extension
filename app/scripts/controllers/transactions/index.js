@@ -761,8 +761,7 @@ export default class TransactionController extends EventEmitter {
 
     if (eip1559Compatibility) {
       const { eip1559V2Enabled } = this.preferencesStore.getState();
-      const chainId = this._getCurrentChainId;
-
+      const chainId = this._getCurrentChainId();
       const advancedGasFeeDefaultValues = this.getAdvancedGasFee()[chainId];
       if (
         eip1559V2Enabled &&
