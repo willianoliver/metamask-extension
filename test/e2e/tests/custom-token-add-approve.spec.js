@@ -232,17 +232,18 @@ describe('Create token, approve token and approve token without gas', function (
           );
           await gasPriceInput.fill('10');
           await gasLimitInput.fill('60001');
+          await driver.waitForSelector({ text: 'Save', tag: 'button' });
           await driver.clickElement({ text: 'Save', tag: 'button' });
           const gasFeeInEth = await driver.findElement(
             '.confirm-approve-content__transaction-details-content__secondary-fee',
           );
-          assert.equal(await gasFeeInEth.getText(), '0.0006 ETH');
-
-          // edits the permission
           await driver.clickElement({
             css: '.confirm-approve-content__small-blue-text',
             text: 'View full transaction details',
           });
+          assert.equal(await gasFeeInEth.getText(), '0.0006 ETH');
+
+          // edits the permission
           const editButtons = await driver.findClickableElements(
             '.confirm-approve-content__small-blue-text',
           );
