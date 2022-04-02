@@ -194,7 +194,7 @@
 .btn-raised {
   color: var(--color-primary-default);
   background-color: var(--color-background-default);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-neutral-sm);
   padding: 6px;
   height: initial;
   min-height: initial;
@@ -214,7 +214,7 @@ input[type="submit"][disabled] {
   transition: box-shadow cubic-bezier(0.6, -0.28, 0.735, 0.045) 200ms;
 
   &:hover {
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-neutral-sm);
   }
 
   &.btn-secondary {
@@ -228,6 +228,10 @@ input[type="submit"][disabled] {
 
     &:active {
       border-color: var(--color-primary-alternative);
+    }
+
+    &:hover {
+      box-shadow: var(--shadow-primary-sm);
     }
   }
 
@@ -257,6 +261,10 @@ input[type="submit"][disabled] {
     &:active {
       border-color: var(--color-error-alternative);
     }
+
+    &:hover {
+      box-shadow: var(--shadow-danger-sm);
+    }
   }
 
   &.btn-warning {
@@ -284,6 +292,10 @@ input[type="submit"][disabled] {
     &:active {
       background-color: var(--color-primary-alternative);
     }
+
+    &:hover {
+      box-shadow: var(--shadow-primary-sm);
+    }
   }
 
   &.btn-danger-primary {
@@ -296,6 +308,10 @@ input[type="submit"][disabled] {
 
     &:active {
       background-color: var(--color-error-alternative);
+    }
+
+    &:hover {
+      box-shadow: var(--shadow-danger-sm);
     }
   }
 }

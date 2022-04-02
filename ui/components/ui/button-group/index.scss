@@ -61,8 +61,8 @@
     }
 
     &:hover {
-      box-shadow: 0 0 14px rgba(0, 0, 0, 0.18);
-    };
+      box-shadow: var(--shadow-primary-sm);
+    }
   }
 
   .radio-button--active.radio-button--danger {

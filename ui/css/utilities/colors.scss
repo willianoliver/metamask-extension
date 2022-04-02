@@ -12,4 +12,20 @@
   // DO NOT CHANGE
   // Required for the QR reader to work properly
   --qr-code-white-background: '#fff';
+
+  // Shadows
+  --shadow-neutral-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-neutral-md: 0 7px 42px rgba(0, 0, 0, 0.08);
+  --shadow-primary-sm: 0 5px 20px rgba(3, 125, 214, 0.2);
+  --shadow-danger-sm: 0 5px 20px rgba(215, 58, 73, 0.4);
 }
+
+[data-theme='dark'] {
+  // Shadows
+  --shadow-neutral-sm: 0 7px 32px rgba(0, 0, 0, 0.5);
+  --shadow-neutral-md: 0 20px 80px rgba(0, 0, 0, 0.8);
+  --shadow-primary-sm: 0 5px 20px rgba(16, 152, 252, 0.4);
+  --shadow-danger-sm: 0 5px 20px rgba(215, 58, 73, 0.4);
+}
+
+

@@ -36,7 +36,7 @@
   &#{&}-wideInfo-theme {
     background: var(--color-background-default);
     color: var(--color-text-default);
-    box-shadow: 0 0 14px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--shadow-neutral-sm);
     border-radius: 8px;
     max-width: 203px;
     padding: 16px;
