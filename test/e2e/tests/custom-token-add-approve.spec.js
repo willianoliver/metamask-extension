@@ -241,6 +241,7 @@ describe('Create token, approve token and approve token without gas', function (
             css: '.confirm-approve-content__small-blue-text',
             text: 'View full transaction details',
           });
+          await driver.delay(2000);
           assert.equal(await gasFeeInEth.getText(), '0.0006 ETH');
 
           // edits the permission
