@@ -9,7 +9,7 @@ import AssetListItem from '../asset-list-item';
 import { PRIMARY, SECONDARY } from '../../../helpers/constants/common';
 import { useUserPreferencedCurrency } from '../../../hooks/useUserPreferencedCurrency';
 import {
-  getCurrentAccountWithSendEtherInfo,
+  getSelectedAccountCachedBalance,
   getShouldShowFiat,
   getNativeCurrencyImage,
   getIsMainnet,
@@ -30,9 +30,7 @@ import { MetaMetricsContext } from '../../../contexts/metametrics';
 const AssetList = ({ onClickAsset }) => {
   const t = useI18nContext();
   const history = useHistory();
-  const selectedAccountBalance = useSelector(
-    (state) => getCurrentAccountWithSendEtherInfo(state).balance,
-  );
+  const selectedAccountBalance = useSelector(getSelectedAccountCachedBalance);
   const nativeCurrency = useSelector(getNativeCurrency);
   const showFiat = useSelector(getShouldShowFiat);
   const trackEvent = useContext(MetaMetricsContext);
@@ -67,17 +65,19 @@ const AssetList = ({ onClickAsset }) => {
 
   return (
     <>
-      <AssetListItem
-        onClick={() => onClickAsset(nativeCurrency)}
-        data-testid="wallet-balance"
-        primary={
-          primaryCurrencyProperties.value ?? secondaryCurrencyProperties.value
-        }
-        tokenSymbol={primaryCurrencyProperties.suffix}
-        secondary={showFiat ? secondaryCurrencyDisplay : undefined}
-        tokenImage={primaryTokenImage}
-        identiconBorder
-      />
+      {selectedAccountBalance ? (
+        <AssetListItem
+          onClick={() => onClickAsset(nativeCurrency)}
+          data-testid="wallet-balance"
+          primary={
+            primaryCurrencyProperties.value ?? secondaryCurrencyProperties.value
+          }
+          tokenSymbol={primaryCurrencyProperties.suffix}
+          secondary={showFiat ? secondaryCurrencyDisplay : undefined}
+          tokenImage={primaryTokenImage}
+          identiconBorder
+        />
+      ) : null}
       <TokenList
         onTokenClick={(tokenAddress) => {
           onClickAsset(tokenAddress);
