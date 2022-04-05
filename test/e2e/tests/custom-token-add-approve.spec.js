@@ -234,14 +234,14 @@ describe('Create token, approve token and approve token without gas', function (
           await gasLimitInput.fill('60001');
           await driver.waitForSelector({ text: 'Save', tag: 'button' });
           await driver.clickElement({ text: 'Save', tag: 'button' });
-          const gasFeeInEth = await driver.findElement(
-            '.confirm-approve-content__transaction-details-content__secondary-fee',
-          );
+          
           await driver.clickElement({
             css: '.confirm-approve-content__small-blue-text',
             text: 'View full transaction details',
           });
-          await driver.delay(2000);
+          const gasFeeInEth = await driver.findElement(
+            '.confirm-approve-content__transaction-details-content__secondary-fee',
+          );
           assert.equal(await gasFeeInEth.getText(), '0.0006 ETH');
 
           // edits the permission
