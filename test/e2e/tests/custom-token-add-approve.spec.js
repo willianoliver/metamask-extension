@@ -234,7 +234,7 @@ describe('Create token, approve token and approve token without gas', function (
           await gasLimitInput.fill('60001');
           await driver.waitForSelector({ text: 'Save', tag: 'button' });
           await driver.clickElement({ text: 'Save', tag: 'button' });
-          
+
           await driver.clickElement({
             css: '.confirm-approve-content__small-blue-text',
             text: 'View full transaction details',
