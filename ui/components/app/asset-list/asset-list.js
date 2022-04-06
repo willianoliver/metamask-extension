@@ -69,7 +69,7 @@ const AssetList = ({ onClickAsset }) => {
 
   const primaryTokenImage = useSelector(getNativeCurrencyImage);
   const isMainnet = useSelector(getIsMainnet) || process.env.IN_TEST;
-  const detectedTokens = process.env.TOKEN_DETECTION_V2 ? useSelector(getDetectedTokensInCurrentNetwork) : -1;
+  const detectedTokens = useSelector(getDetectedTokensInCurrentNetwork) || -1;
 
   return (
     <>
@@ -97,7 +97,13 @@ const AssetList = ({ onClickAsset }) => {
           });
         }}
       />
-      {process.env.TOKEN_DETECTION_V2 ? (detectedTokens.length > 0 && <DetectedTokensLink onClick={() => history.push(DETECTED_TOKEN_ROUTE)} />) : null}
+      {process.env.TOKEN_DETECTION_V2
+        ? detectedTokens.length > 0 && (
+            <DetectedTokensLink
+              onClick={() => history.push(DETECTED_TOKEN_ROUTE)}
+            />
+          )
+        : null}
       <Box marginTop={4}>
         <Box justifyContent={JUSTIFY_CONTENT.CENTER}>
           <Typography
