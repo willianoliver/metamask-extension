@@ -234,8 +234,8 @@ export default class ExperimentalTab extends PureComponent {
 
     const themesOptions = [
       {
-        name: t('defaultTheme'),
-        value: THEME_TYPE.DEFAULT,
+        name: t('lightTheme'),
+        value: THEME_TYPE.LIGHT,
       },
       {
         name: t('darkTheme'),
