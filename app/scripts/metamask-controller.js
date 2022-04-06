@@ -141,7 +141,6 @@ import {
   buildSnapRestrictedMethodSpecifications,
   ///: END:ONLY_INCLUDE_IN
 } from './controllers/permissions';
-// import { detect } from 'detect-browser';
 import createRPCMethodTrackingMiddleware from './lib/createRPCMethodTrackingMiddleware';
 
 ///: BEGIN:ONLY_INCLUDE_IN(flask)
