@@ -77,7 +77,7 @@ describe('migration #70', () => {
       },
       data: {
         FooController: { a: 'b' },
-        AnnouncementController: { ...oldStorage.NotificationController },
+        AnnouncementController: { ...oldStorage.data.NotificationController },
       },
     });
   });
