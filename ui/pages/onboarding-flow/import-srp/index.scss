@@ -1,7 +1,7 @@
 .import-srp {
   @media screen and (min-width: $break-large) {
-    width: 625px;
-    margin-top: 40px;
+    max-width: 600px;
+    padding: 40px;
   }
 
   @media screen and (max-width: $break-small) {
