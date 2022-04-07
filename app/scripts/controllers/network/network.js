@@ -119,7 +119,9 @@ export default class NetworkController extends EventEmitter {
     const { blockTracker } = this.getProviderAndBlockTracker();
     if (blockTracker !== null) {
       // Stop polling for blocks.
+      console.log('[NetworkController#destroy] Removing all listeners');
       blockTracker.removeAllListeners();
+      console.log('[NetworkController#destroy] Stopping block tracker');
       blockTracker._maybeEnd();
     }
   }
@@ -377,6 +379,8 @@ export default class NetworkController extends EventEmitter {
     this.once(NETWORK_EVENTS.NETWORK_DID_CHANGE, () => {
       networkChanged = true;
     });
+
+    console.log('[NetworkController] Checking Infura availability');
 
     try {
       const response = await fetchWithTimeout(rpcUrl, {
