@@ -11,26 +11,30 @@ global.chrome = { runtime: { id: 'testid' } };
 nock.disableNetConnect();
 nock.enableNetConnect('localhost');
 
+/*
 // catch rejections that are still unhandled when tests exit
 const unhandledRejections = new Map();
 process.on('unhandledRejection', (reason, promise) => {
-  console.log('Unhandled rejection:', reason);
+  process.stderr.write(`Unhandled rejection: ${reason}\n`);
   unhandledRejections.set(promise, reason);
 });
 process.on('rejectionHandled', (promise) => {
-  console.log(`handled: ${unhandledRejections.get(promise)}`);
+  process.stderr.write(`handled: ${unhandledRejections.get(promise)}\n`);
   unhandledRejections.delete(promise);
 });
 
 process.on('exit', () => {
   if (unhandledRejections.size > 0) {
-    console.error(`Found ${unhandledRejections.size} unhandled rejections:`);
+    process.stderr.write(
+      `Found ${unhandledRejections.size} unhandled rejections:\n`,
+    );
     for (const reason of unhandledRejections.values()) {
-      console.error('Unhandled rejection: ', reason);
+      process.stderr.write(`Unhandled rejection: ${reason}\n`);
     }
     process.exit(1);
   }
 });
+*/
 
 Enzyme.configure({ adapter: new Adapter() });
 
