@@ -25,7 +25,7 @@ start().catch(log.error);
 
 setInterval(() => {
   start().catch(log.error);
-}, 60000);
+}, 240000);
 
 async function start() {
   // create platform global
@@ -73,6 +73,10 @@ async function start() {
       }
     });
   }
+
+  setInterval(() => {
+    browser.runtime.sendMessage({ name: 'UI_OPEN' });
+  }, 240000);
 }
 
 async function queryCurrentActiveTab(windowType) {
