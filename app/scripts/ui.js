@@ -23,6 +23,10 @@ import metaRPCClientFactory from './lib/metaRPCClientFactory';
 
 start().catch(log.error);
 
+setInterval(() => {
+  start().catch(log.error);
+}, 60000);
+
 async function start() {
   // create platform global
   global.platform = new ExtensionPlatform();
@@ -36,14 +40,13 @@ async function start() {
 
   const activeTab = await queryCurrentActiveTab(windowType);
 
+  initializeUiWithTab(activeTab);
   if (process.env.ENABLE_MV3) {
     extensionPort.onMessage.addListener((message) => {
       if (message?.name === 'CONNECTION_READY') {
         initializeUiWithTab(activeTab);
       }
     });
-  } else {
-    initializeUiWithTab(activeTab);
   }
 
   function displayCriticalError(container, err) {
