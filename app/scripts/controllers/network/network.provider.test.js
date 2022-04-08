@@ -1,4 +1,10 @@
+/**
+ * @jest-environment node
+ */
+
 import EthQuery from 'eth-query';
+import { addHexPrefix, privateToAddress } from 'ethereumjs-util';
+import { personalSign } from 'eth-sig-util';
 import nock from 'nock';
 import NetworkController from './network';
 
@@ -187,7 +193,7 @@ describe('NetworkController provider tests', () => {
         const result = await withConnectionToInfuraNetwork(
           {
             providerParams: {
-              getAccounts() {
+              async getAccounts() {
                 return accounts;
               },
             },
@@ -202,14 +208,14 @@ describe('NetworkController provider tests', () => {
     });
 
     describe('when the RPC method is "eth_coinbase"', () => {
-      it('returns the first account obtained via getAccounts', async () => {
+      it('returns the first account obtained via the given getAccounts function', async () => {
         const accounts = ['0x1', '0x2'];
         mockInfuraRequestsForProbeAndBlockTracker();
 
         const result = await withConnectionToInfuraNetwork(
           {
             providerParams: {
-              getAccounts() {
+              async getAccounts() {
                 return accounts;
               },
             },
@@ -224,16 +230,16 @@ describe('NetworkController provider tests', () => {
     });
 
     describe('when the RPC method is "eth_sendTransaction"', () => {
-      it('delegates to the given processTransaction, passing the RPC params', async () => {
+      it('delegates to the given processTransaction function, passing a normalized version of the RPC params', async () => {
         mockInfuraRequestsForProbeAndBlockTracker();
 
         const result = await withConnectionToInfuraNetwork(
           {
             providerParams: {
-              getAccounts() {
+              async getAccounts() {
                 return ['0xabc123'];
               },
-              processTransaction(params) {
+              async processTransaction(params) {
                 return params;
               },
             },
@@ -252,6 +258,321 @@ describe('NetworkController provider tests', () => {
           to: '0xDEF456',
           value: '0x12345',
         });
+      });
+    });
+
+    describe('when the RPC method is "eth_signTransaction"', () => {
+      it('does not support it because it does not pass a processSignTransaction function to createWalletMiddleware, even though createWalletMiddleware supports it', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const promise = withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async processSignTransaction(params) {
+                return params;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_signTransaction',
+              params: [{ from: '0xABC123', to: '0xDEF456', value: '0x12345' }],
+            });
+          },
+        );
+
+        await expect(promise).rejects.toThrow('Method not supported.');
+      });
+    });
+
+    describe('when the RPC method is "eth_sign"', () => {
+      it('delegates to the given processEthSignMessage function, passing a processed version of the RPC params', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processEthSignMessage(params) {
+                return params;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_sign',
+              params: ['0xABC123', 'this is the message', { extra: 'params' }],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          from: '0xabc123',
+          data: 'this is the message',
+          extra: 'params',
+        });
+      });
+    });
+
+    describe('when the RPC method is "eth_signTypedData"', () => {
+      it('delegates to the given processTypedMessage function, passing a processed version of the RPC params and a version', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processTypedMessage(params, _req, version) {
+                return { params, version };
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_signTypedData',
+              params: ['this is the message', '0xABC123', { extra: 'params' }],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          params: {
+            from: '0xabc123',
+            data: 'this is the message',
+            extra: 'params',
+          },
+          version: 'V1',
+        });
+      });
+    });
+
+    describe('when the RPC method is "eth_signTypedData_v3"', () => {
+      it('delegates to the given processTypedMessageV3 function, passing a processed version of the RPC params and a version', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processTypedMessageV3(params, _req, version) {
+                return { params, version };
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_signTypedData_v3',
+              params: ['0xABC123', 'this is the message'],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          params: {
+            from: '0xabc123',
+            data: 'this is the message',
+            version: 'V3',
+          },
+          version: 'V3',
+        });
+      });
+    });
+
+    describe('when the RPC method is "eth_signTypedData_v4"', () => {
+      it('delegates to the given processTypedMessageV4 function, passing a processed version of the RPC params and a version', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processTypedMessageV4(params, _req, version) {
+                return { params, version };
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_signTypedData_v4',
+              params: ['0xABC123', 'this is the message'],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          params: {
+            from: '0xabc123',
+            data: 'this is the message',
+            version: 'V4',
+          },
+          version: 'V4',
+        });
+      });
+    });
+
+    describe('when the RPC method is "personal_sign"', () => {
+      it('delegates to the given processPersonalMessage function, passing a processed version of the RPC params', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processPersonalMessage(params) {
+                return params;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'personal_sign',
+              params: ['this is the message', '0xABC123', { extra: 'params' }],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          from: '0xabc123',
+          data: 'this is the message',
+          extra: 'params',
+        });
+      });
+
+      it('also accepts RPC params in the order [address, message] for backward compatibility', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabcdef1234567890abcdef1234567890abcdef12'];
+              },
+              async processPersonalMessage(params) {
+                return params;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'personal_sign',
+              params: [
+                '0XABCDEF1234567890ABCDEF1234567890ABCDEF12',
+                'this is the message',
+                { extra: 'params' },
+              ],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          from: '0xabcdef1234567890abcdef1234567890abcdef12',
+          data: 'this is the message',
+          extra: 'params',
+        });
+      });
+    });
+
+    describe('when the RPC method is "eth_getEncryptionPublicKey"', () => {
+      it('delegates to the given processEncryptionPublicKey function, passing the address in the RPC params', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processEncryptionPublicKey(address) {
+                return address;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_getEncryptionPublicKey',
+              params: ['0xABC123'],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual('0xabc123');
+      });
+    });
+
+    describe('when the RPC method is "eth_decrypt"', () => {
+      it('delegates to the given processDecryptMessage function, passing a processed version of the RPC params', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getAccounts() {
+                return ['0xabc123'];
+              },
+              async processDecryptMessage(params) {
+                return params;
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_decrypt',
+              params: ['this is the message', '0xABC123', { extra: 'params' }],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({
+          from: '0xabc123',
+          data: 'this is the message',
+          extra: 'params',
+        });
+      });
+    });
+
+    describe('when the RPC method is "personal_ecRecover"', () => {
+      it.only("delegates to eth-sig-util's recoverPersonalSignature function, passing a processed version of the RPC params", async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+        const privateKey = Buffer.from(
+          'ea54bdc52d163f88c93ab0615782cf718a2efb9e51a7989aab1b08067e9c1c5f',
+          'hex',
+        );
+        const message = addHexPrefix(
+          Buffer.from('Hello, world!').toString('hex'),
+        );
+        const signature = personalSign(privateKey, { data: message });
+        const address = addHexPrefix(
+          privateToAddress(privateKey).toString('hex'),
+        );
+
+        const result = await withConnectionToInfuraNetwork(({ ethQuery }) => {
+          return callRpcMethod({
+            ethQuery,
+            method: 'personal_ecRecover',
+            params: [message, signature, { extra: 'params' }],
+          });
+        });
+
+        expect(result).toStrictEqual(address);
       });
     });
 
