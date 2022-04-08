@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import PropTypes from 'prop-types';
+import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { useI18nContext } from '../../../hooks/useI18nContext';
 import { IMPORT_TOKEN_ROUTE } from '../../../helpers/constants/routes';
@@ -8,15 +8,19 @@ import Box from '../../ui/box/box';
 import { TEXT_ALIGN } from '../../../helpers/constants/design-system';
 import { detectNewTokens } from '../../../store/actions';
 import { MetaMetricsContext } from '../../../contexts/metametrics';
+import { getIsTokenDetectionSupported } from '../../../selectors';
 
-export default function ImportTokenLink({ isMainnet }) {
+export default function ImportTokenLink() {
   const trackEvent = useContext(MetaMetricsContext);
   const t = useI18nContext();
   const history = useHistory();
 
+  const isTokenDetectionsupported =
+    useSelector(getIsTokenDetectionSupported) || Boolean(process.env.IN_TEST);
+
   return (
     <Box className="import-token-link" textAlign={TEXT_ALIGN.CENTER}>
-      {isMainnet && (
+      {isTokenDetectionsupported && (
         <>
           <Button
             className="import-token-link__link"
@@ -43,7 +47,7 @@ export default function ImportTokenLink({ isMainnet }) {
           });
         }}
       >
-        {isMainnet
+        {isTokenDetectionsupported
           ? t('importTokens')
           : t('importTokens').charAt(0).toUpperCase() +
             t('importTokens').slice(1)}
@@ -51,7 +55,3 @@ export default function ImportTokenLink({ isMainnet }) {
     </Box>
   );
 }
-
-ImportTokenLink.propTypes = {
-  isMainnet: PropTypes.bool,
-};

@@ -15,7 +15,6 @@ import {
   getCurrentAccountWithSendEtherInfo,
   getShouldShowFiat,
   getNativeCurrencyImage,
-  getIsMainnet,
   getDetectedTokensInCurrentNetwork,
 } from '../../../selectors';
 import { getNativeCurrency } from '../../../ducks/metamask/metamask';
@@ -68,7 +67,6 @@ const AssetList = ({ onClickAsset }) => {
   });
 
   const primaryTokenImage = useSelector(getNativeCurrencyImage);
-  const isMainnet = useSelector(getIsMainnet) || process.env.IN_TEST;
   const detectedTokens = useSelector(getDetectedTokensInCurrentNetwork) || -1;
 
   return (
@@ -115,7 +113,6 @@ const AssetList = ({ onClickAsset }) => {
           </Typography>
         </Box>
         <ImportTokenLink
-          isMainnet={isMainnet}
           onClick={() => {
             history.push(IMPORT_TOKEN_ROUTE);
             trackEvent({
