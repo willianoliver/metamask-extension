@@ -40,7 +40,7 @@ function importAllScripts() {
 importAllScripts();
 
 // eslint-disable-next-line
-chrome.runtime.onMessage.addListener(() => {
+chrome.runtime.onConnect.addListener(() => {
   importAllScripts();
 });
 

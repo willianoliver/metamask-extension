@@ -73,10 +73,6 @@ async function start() {
       }
     });
   }
-
-  setInterval(() => {
-    browser.runtime.sendMessage({ name: 'UI_OPEN' });
-  }, 240000);
 }
 
 async function queryCurrentActiveTab(windowType) {
