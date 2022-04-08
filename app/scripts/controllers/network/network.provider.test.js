@@ -97,7 +97,11 @@ async function withConnectionToInfuraNetwork(...args) {
   return result;
 }
 
-function mockInfuraRpcMethodCall({ network = 'mainnet', method, params = [] }) {
+function mockRpcMethodCallToInfura({
+  network = 'mainnet',
+  method,
+  params = [],
+}) {
   const scope = buildScopeForMockingInfuraRequests({ network });
   return scope.post(`/v3/${infuraProjectId}`, {
     jsonrpc: '2.0',
@@ -106,8 +110,8 @@ function mockInfuraRpcMethodCall({ network = 'mainnet', method, params = [] }) {
   });
 }
 
-function mockInfuraArbitraryRpcMethodCall({ network = 'mainnet' } = {}) {
-  return mockInfuraRpcMethodCall({ network, method: 'arbitraryRpcMethod' });
+function mockArbitraryRpcMethodCallToInfura({ network = 'mainnet' } = {}) {
+  return mockRpcMethodCallToInfura({ network, method: 'arbitraryRpcMethod' });
 }
 
 function callRpcMethod({ ethQuery, method, params = [] }) {
@@ -152,7 +156,12 @@ describe('NetworkController provider tests', () => {
       });
     });
 
-    // === FIRST LEVEL: MetaMask middleware
+    // -----------
+    // MetaMask middleware
+    // (app/scripts/controllers/network/createMetamaskMiddleware.js)
+    // -----------
+
+    // Scaffold middleware
 
     describe('when the RPC method is "eth_syncing"', () => {
       it('returns a static result', async () => {
@@ -185,8 +194,11 @@ describe('NetworkController provider tests', () => {
       });
     });
 
+    // Wallet middleware
+    // (eth-json-rpc-middleware -> createWalletMiddleware)
+
     describe('when the RPC method is "eth_accounts"', () => {
-      it('returns whatever the given getAccounts function returns', async () => {
+      it('returns the result of getAccounts', async () => {
         const accounts = ['0x1', '0x2'];
         mockInfuraRequestsForProbeAndBlockTracker();
 
@@ -230,33 +242,52 @@ describe('NetworkController provider tests', () => {
     });
 
     describe('when the RPC method is "eth_sendTransaction"', () => {
-      it('delegates to the given processTransaction function, passing a normalized version of the RPC params', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processTransaction function', () => {
+        it('returns the result of processTransaction, passing it a normalized version of the RPC params', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processTransaction(params) {
-                return params;
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processTransaction(params) {
+                  return params;
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_sendTransaction',
+                params: [
+                  { from: '0xABC123', to: '0xDEF456', value: '0x12345' },
+                ],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            from: '0xabc123',
+            to: '0xDEF456',
+            value: '0x12345',
+          });
+        });
+      });
+
+      describe('when not configured with a processTransaction function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_sendTransaction',
-              params: [{ from: '0xABC123', to: '0xDEF456', value: '0x12345' }],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          from: '0xabc123',
-          to: '0xDEF456',
-          value: '0x12345',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
@@ -287,270 +318,405 @@ describe('NetworkController provider tests', () => {
     });
 
     describe('when the RPC method is "eth_sign"', () => {
-      it('delegates to the given processEthSignMessage function, passing a processed version of the RPC params', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processEthSignMessage function', () => {
+        it('delegates to processEthSignMessage, passing a processed version of the RPC params', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processEthSignMessage(params) {
-                return params;
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processEthSignMessage(params) {
+                  return params;
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_sign',
+                params: [
+                  '0xABC123',
+                  'this is the message',
+                  { extra: 'params' },
+                ],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            from: '0xabc123',
+            data: 'this is the message',
+            extra: 'params',
+          });
+        });
+      });
+
+      describe('when not configured with a processTransaction function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_sign',
-              params: ['0xABC123', 'this is the message', { extra: 'params' }],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          from: '0xabc123',
-          data: 'this is the message',
-          extra: 'params',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "eth_signTypedData"', () => {
-      it('delegates to the given processTypedMessage function, passing a processed version of the RPC params and a version', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processTypedMessage function', () => {
+        it('delegates to the given processTypedMessage function, passing a processed version of the RPC params and a version', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processTypedMessage(params, _req, version) {
-                return { params, version };
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processTypedMessage(params, _req, version) {
+                  return { params, version };
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_signTypedData',
+                params: [
+                  'this is the message',
+                  '0xABC123',
+                  { extra: 'params' },
+                ],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            params: {
+              from: '0xabc123',
+              data: 'this is the message',
+              extra: 'params',
+            },
+            version: 'V1',
+          });
+        });
+      });
+
+      describe('when not configured with a processTypedMessage function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_signTypedData',
-              params: ['this is the message', '0xABC123', { extra: 'params' }],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          params: {
-            from: '0xabc123',
-            data: 'this is the message',
-            extra: 'params',
-          },
-          version: 'V1',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "eth_signTypedData_v3"', () => {
-      it('delegates to the given processTypedMessageV3 function, passing a processed version of the RPC params and a version', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processTypedMessageV3 function', () => {
+        it('delegates to processTypedMessageV3, passing a processed version of the RPC params and a version', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processTypedMessageV3(params, _req, version) {
-                return { params, version };
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processTypedMessageV3(params, _req, version) {
+                  return { params, version };
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_signTypedData_v3',
+                params: ['0xABC123', 'this is the message'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            params: {
+              from: '0xabc123',
+              data: 'this is the message',
+              version: 'V3',
+            },
+            version: 'V3',
+          });
+        });
+      });
+
+      describe('when not configured with a processTypedMessageV3 function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_signTypedData_v3',
-              params: ['0xABC123', 'this is the message'],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          params: {
-            from: '0xabc123',
-            data: 'this is the message',
-            version: 'V3',
-          },
-          version: 'V3',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "eth_signTypedData_v4"', () => {
-      it('delegates to the given processTypedMessageV4 function, passing a processed version of the RPC params and a version', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processTypedMessageV4 function', () => {
+        it('delegates to processTypedMessageV4, passing a processed version of the RPC params and a version', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processTypedMessageV4(params, _req, version) {
-                return { params, version };
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processTypedMessageV4(params, _req, version) {
+                  return { params, version };
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_signTypedData_v4',
+                params: ['0xABC123', 'this is the message'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            params: {
+              from: '0xabc123',
+              data: 'this is the message',
+              version: 'V4',
+            },
+            version: 'V4',
+          });
+        });
+      });
+
+      describe('when not configured with a processTypedMessageV4 function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_signTypedData_v4',
-              params: ['0xABC123', 'this is the message'],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          params: {
-            from: '0xabc123',
-            data: 'this is the message',
-            version: 'V4',
-          },
-          version: 'V4',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "personal_sign"', () => {
-      it('delegates to the given processPersonalMessage function, passing a processed version of the RPC params', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processPersonalMessage function', () => {
+        it('delegates to the given processPersonalMessage function, passing a processed version of the RPC params', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processPersonalMessage(params) {
-                return params;
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processPersonalMessage(params) {
+                  return params;
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
-            return callRpcMethod({
-              ethQuery,
-              method: 'personal_sign',
-              params: ['this is the message', '0xABC123', { extra: 'params' }],
-            });
-          },
-        );
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'personal_sign',
+                params: [
+                  'this is the message',
+                  '0xABC123',
+                  { extra: 'params' },
+                ],
+              });
+            },
+          );
 
-        expect(result).toStrictEqual({
-          from: '0xabc123',
-          data: 'this is the message',
-          extra: 'params',
+          expect(result).toStrictEqual({
+            from: '0xabc123',
+            data: 'this is the message',
+            extra: 'params',
+          });
+        });
+
+        it('also accepts RPC params in the order [address, message] for backward compatibility', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabcdef1234567890abcdef1234567890abcdef12'];
+                },
+                async processPersonalMessage(params) {
+                  return params;
+                },
+              },
+            },
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'personal_sign',
+                params: [
+                  '0XABCDEF1234567890ABCDEF1234567890ABCDEF12',
+                  'this is the message',
+                  { extra: 'params' },
+                ],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            from: '0xabcdef1234567890abcdef1234567890abcdef12',
+            data: 'this is the message',
+            extra: 'params',
+          });
         });
       });
 
-      it('also accepts RPC params in the order [address, message] for backward compatibility', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when not configured with a processPersonalMessage function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabcdef1234567890abcdef1234567890abcdef12'];
-              },
-              async processPersonalMessage(params) {
-                return params;
-              },
-            },
-          },
-          ({ ethQuery }) => {
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'personal_sign',
-              params: [
-                '0XABCDEF1234567890ABCDEF1234567890ABCDEF12',
-                'this is the message',
-                { extra: 'params' },
-              ],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          from: '0xabcdef1234567890abcdef1234567890abcdef12',
-          data: 'this is the message',
-          extra: 'params',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "eth_getEncryptionPublicKey"', () => {
-      it('delegates to the given processEncryptionPublicKey function, passing the address in the RPC params', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processEncryptionPublicKey function', () => {
+        it('delegates to processEncryptionPublicKey, passing the address in the RPC params', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processEncryptionPublicKey(address) {
-                return address;
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processEncryptionPublicKey(address) {
+                  return address;
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_getEncryptionPublicKey',
+                params: ['0xABC123'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual('0xabc123');
+        });
+      });
+
+      describe('when not configured with a processEncryptionPublicKey function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_getEncryptionPublicKey',
-              params: ['0xABC123'],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual('0xabc123');
+          await expect(promise).rejects.toThrow('Method not supported.');
+        });
       });
     });
 
     describe('when the RPC method is "eth_decrypt"', () => {
-      it('delegates to the given processDecryptMessage function, passing a processed version of the RPC params', async () => {
-        mockInfuraRequestsForProbeAndBlockTracker();
+      describe('when configured with a processDecryptMessage function', () => {
+        it('delegates to the given processDecryptMessage function, passing a processed version of the RPC params', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
 
-        const result = await withConnectionToInfuraNetwork(
-          {
-            providerParams: {
-              async getAccounts() {
-                return ['0xabc123'];
-              },
-              async processDecryptMessage(params) {
-                return params;
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                async getAccounts() {
+                  return ['0xabc123'];
+                },
+                async processDecryptMessage(params) {
+                  return params;
+                },
               },
             },
-          },
-          ({ ethQuery }) => {
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_decrypt',
+                params: [
+                  'this is the message',
+                  '0xABC123',
+                  { extra: 'params' },
+                ],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            from: '0xabc123',
+            data: 'this is the message',
+            extra: 'params',
+          });
+        });
+      });
+
+      describe('when not configured with a processDecryptMessage function', () => {
+        it('throws a "method not found" error', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const promise = withConnectionToInfuraNetwork(({ ethQuery }) => {
             return callRpcMethod({
               ethQuery,
               method: 'eth_decrypt',
-              params: ['this is the message', '0xABC123', { extra: 'params' }],
             });
-          },
-        );
+          });
 
-        expect(result).toStrictEqual({
-          from: '0xabc123',
-          data: 'this is the message',
-          extra: 'params',
+          await expect(promise).rejects.toThrow('Method not supported.');
         });
       });
     });
 
     describe('when the RPC method is "personal_ecRecover"', () => {
-      it.only("delegates to eth-sig-util's recoverPersonalSignature function, passing a processed version of the RPC params", async () => {
+      it("returns the result of eth-sig-util's recoverPersonalSignature function, passing it a processed version of the RPC params", async () => {
         mockInfuraRequestsForProbeAndBlockTracker();
         const privateKey = Buffer.from(
           'ea54bdc52d163f88c93ab0615782cf718a2efb9e51a7989aab1b08067e9c1c5f',
@@ -576,12 +742,174 @@ describe('NetworkController provider tests', () => {
       });
     });
 
-    // === SECOND LEVEL: Network middleware (Infura vs. standard)
+    // Pending nonce middleware
+    // (app/scripts/controllers/network/middleware/pending.js)
 
-    // --- Network and chain id middleware ---
+    describe('when the RPC method is "eth_getTransactionCount" and the block param is "pending"', () => {
+      it('returns the result of the given getPendingNonce function', async () => {
+        mockInfuraRequestsForProbeAndBlockTracker();
+
+        const result = await withConnectionToInfuraNetwork(
+          {
+            providerParams: {
+              async getPendingNonce(param) {
+                return { param, blockNumber: '0x2' };
+              },
+            },
+          },
+          ({ ethQuery }) => {
+            return callRpcMethod({
+              ethQuery,
+              method: 'eth_getTransactionCount',
+              params: ['0xabc123', 'pending'],
+            });
+          },
+        );
+
+        expect(result).toStrictEqual({ param: '0xabc123', blockNumber: '0x2' });
+      });
+    });
+
+    // Pending transactions middleware
+    // (app/scripts/controllers/network/middleware/pending.js)
+
+    describe('when the RPC method is "eth_getTransactionByHash"', () => {
+      describe('assuming that the given getPendingTransactionByHash function returns a (pending) EIP-1559 transaction', () => {
+        it('delegates to getPendingTransactionByHash, using a standardized version of the transaction as the result', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                getPendingTransactionByHash(_hash) {
+                  return {
+                    txParams: {
+                      maxFeePerGas: '0x174876e800',
+                      maxPriorityFeePerGas: '0x3b9aca00',
+                    },
+                  };
+                },
+              },
+            },
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_getTransactionByHash',
+                params: ['0x999'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            v: undefined,
+            r: undefined,
+            s: undefined,
+            to: undefined,
+            gas: undefined,
+            from: undefined,
+            hash: undefined,
+            nonce: undefined,
+            input: '0x',
+            value: '0x0',
+            accessList: null,
+            blockHash: null,
+            blockNumber: null,
+            transactionIndex: null,
+            gasPrice: '0x174876e800',
+            maxFeePerGas: '0x174876e800',
+            maxPriorityFeePerGas: '0x3b9aca00',
+            type: '0x2',
+          });
+        });
+      });
+
+      describe('assuming that the given getPendingTransactionByHash function returns a (pending) non-EIP-1559 transaction', () => {
+        it('delegates to getPendingTransactionByHash, using a standardized, type-0 version of the transaction as the result', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                getPendingTransactionByHash(_hash) {
+                  return {
+                    txParams: {
+                      gasPrice: '0x174876e800',
+                    },
+                  };
+                },
+              },
+            },
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_getTransactionByHash',
+                params: ['0x999'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual({
+            v: undefined,
+            r: undefined,
+            s: undefined,
+            to: undefined,
+            gas: undefined,
+            from: undefined,
+            hash: undefined,
+            nonce: undefined,
+            input: '0x',
+            value: '0x0',
+            accessList: null,
+            blockHash: null,
+            blockNumber: null,
+            transactionIndex: null,
+            gasPrice: '0x174876e800',
+            type: '0x0',
+          });
+        });
+      });
+
+      describe('if the given getPendingTransactionByHash function returns nothing', () => {
+        it('passes the request through to Infura', async () => {
+          mockInfuraRequestsForProbeAndBlockTracker();
+          mockRpcMethodCallToInfura({
+            method: 'eth_getTransactionByHash',
+            params: ['0x999'],
+          }).reply(200, {
+            result: 'result from Infura',
+          });
+
+          const result = await withConnectionToInfuraNetwork(
+            {
+              providerParams: {
+                getPendingTransactionByHash() {
+                  return null;
+                },
+              },
+            },
+            ({ ethQuery }) => {
+              return callRpcMethod({
+                ethQuery,
+                method: 'eth_getTransactionByHash',
+                params: ['0x999'],
+              });
+            },
+          );
+
+          expect(result).toStrictEqual('result from Infura');
+        });
+      });
+    });
+
+    // -----------
+    // Network middleware
+    // (app/scripts/controllers/network/createInfuraClient.js)
+    // -----------
+
+    // Network and chain id middleware
 
     describe('when the RPC method is "eth_chainId"', () => {
-      it('does not hit Infura, instead responding with the chain id that maps to the Infura network', async () => {
+      it('does not hit Infura, instead returning the chain id that maps to the Infura network', async () => {
         const network = 'ropsten';
         mockInfuraRequestsForProbeAndBlockTracker({ network });
 
@@ -595,7 +923,7 @@ describe('NetworkController provider tests', () => {
     });
 
     describe('when the RPC method is "net_version"', () => {
-      it('does not hit Infura, instead responding with the chain id that maps to the Infura network, as a decimal', async () => {
+      it('does not hit Infura, instead returning the chain id that maps to the Infura network, as a decimal', async () => {
         const network = 'ropsten';
         mockInfuraRequestsForProbeAndBlockTracker({ network });
 
@@ -650,20 +978,23 @@ describe('NetworkController provider tests', () => {
 
     // [TODO]
 
-    // --- Inflight cache middleware ---
+    // Inflight cache middleware
 
     // [TODO]
 
-    // --- Block ref middleware ---
+    // Block ref middleware
 
     // [TODO]
 
-    // --- Infura middleware ---
+    // -----------
+    // Infura middleware
+    // (eth-json-rpc-infura -> createInfuraMiddleware)
+    // -----------
 
     describe('when the RPC method is anything', () => {
-      it('throws a specific error message if the response from Infura is a 405', async () => {
+      it('passes the request through to Infura, throwing a specific error message if it responds with 405', async () => {
         mockInfuraRequestsForProbeAndBlockTracker();
-        mockInfuraArbitraryRpcMethodCall().reply(405);
+        mockArbitraryRpcMethodCallToInfura().reply(405);
 
         const promiseForResult = withConnectionToInfuraNetwork(({ ethQuery }) =>
           callArbitraryRpcMethod({ ethQuery }),
@@ -674,9 +1005,9 @@ describe('NetworkController provider tests', () => {
         );
       });
 
-      it('throws a specific error message if the response from Infura is a 429', async () => {
+      it('passes the request through to Infura, throwing a specific error message if it responds with 429', async () => {
         mockInfuraRequestsForProbeAndBlockTracker();
-        mockInfuraArbitraryRpcMethodCall().reply(429);
+        mockArbitraryRpcMethodCallToInfura().reply(429);
 
         const promiseForResult = withConnectionToInfuraNetwork(({ ethQuery }) =>
           callArbitraryRpcMethod({ ethQuery }),
@@ -690,23 +1021,23 @@ describe('NetworkController provider tests', () => {
       describe('if the request to Infura responds with 503', () => {
         it('retries the request up to 5 times until Infura responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall().times(4).reply(503);
-          mockInfuraArbitraryRpcMethodCall().reply(200, {
+          mockArbitraryRpcMethodCallToInfura().times(4).reply(503);
+          mockArbitraryRpcMethodCallToInfura().reply(200, {
             jsonrpc: '2.0',
             id: 1,
-            result: 'it works',
+            result: 'result from Infura',
           });
 
           const result = await withConnectionToInfuraNetwork(({ ethQuery }) =>
             callArbitraryRpcMethod({ ethQuery }),
           );
 
-          expect(result).toStrictEqual('it works');
+          expect(result).toStrictEqual('result from Infura');
         });
 
         it('throws an error if Infura never responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall().times(5).reply(503);
+          mockArbitraryRpcMethodCallToInfura().times(5).reply(503);
 
           const promiseForResult = withConnectionToInfuraNetwork(
             ({ ethQuery }) => callArbitraryRpcMethod({ ethQuery }),
@@ -721,24 +1052,24 @@ describe('NetworkController provider tests', () => {
       describe('if the request to Infura responds with 504', () => {
         it('retries the request up to 5 times until Infura responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall(
-            mockInfuraArbitraryRpcMethodCall().times(4).reply(504),
+          mockArbitraryRpcMethodCallToInfura(
+            mockArbitraryRpcMethodCallToInfura().times(4).reply(504),
           ).reply(200, {
             jsonrpc: '2.0',
             id: 1,
-            result: 'it works',
+            result: 'result from Infura',
           });
 
           const result = await withConnectionToInfuraNetwork(({ ethQuery }) =>
             callArbitraryRpcMethod({ ethQuery }),
           );
 
-          expect(result).toStrictEqual('it works');
+          expect(result).toStrictEqual('result from Infura');
         });
 
         it('throws an error if Infura never responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall().times(5).reply(504);
+          mockArbitraryRpcMethodCallToInfura().times(5).reply(504);
 
           const promiseForResult = withConnectionToInfuraNetwork(
             ({ ethQuery }) => callArbitraryRpcMethod({ ethQuery }),
@@ -753,25 +1084,25 @@ describe('NetworkController provider tests', () => {
       describe('if the request to Infura times out', () => {
         it('retries the request up to 5 times until Infura responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(4)
             .replyWithError('ETIMEDOUT: Some error message');
-          mockInfuraArbitraryRpcMethodCall().reply(200, {
+          mockArbitraryRpcMethodCallToInfura().reply(200, {
             jsonrpc: '2.0',
             id: 1,
-            result: 'it works',
+            result: 'result from Infura',
           });
 
           const result = await withConnectionToInfuraNetwork(({ ethQuery }) =>
             callArbitraryRpcMethod({ ethQuery }),
           );
 
-          expect(result).toStrictEqual('it works');
+          expect(result).toStrictEqual('result from Infura');
         });
 
         it('throws an error if Infura never responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(5)
             .replyWithError('ETIMEDOUT: Some error message');
 
@@ -788,25 +1119,25 @@ describe('NetworkController provider tests', () => {
       describe('if a "connection reset" error is thrown while making the request to Infura', () => {
         it('retries the request up to 5 times until Infura responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(4)
             .replyWithError('ECONNRESET: Some error message');
-          mockInfuraArbitraryRpcMethodCall().reply(200, {
+          mockArbitraryRpcMethodCallToInfura().reply(200, {
             jsonrpc: '2.0',
             id: 1,
-            result: 'it works',
+            result: 'result from Infura',
           });
 
           const result = await withConnectionToInfuraNetwork(({ ethQuery }) =>
             callArbitraryRpcMethod({ ethQuery }),
           );
 
-          expect(result).toStrictEqual('it works');
+          expect(result).toStrictEqual('result from Infura');
         });
 
         it('throws an error if the request never responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(5)
             .replyWithError('ECONNRESET: Some error message');
 
@@ -823,25 +1154,25 @@ describe('NetworkController provider tests', () => {
       describe('if the request to Infura responds with HTML or something else that is non-JSON-parseable', () => {
         it('retries the request up to 5 times until Infura returns something JSON-parseable', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(4)
             .reply('<html><p>Some error message</p></html>');
-          mockInfuraArbitraryRpcMethodCall().reply(200, {
+          mockArbitraryRpcMethodCallToInfura().reply(200, {
             jsonrpc: '2.0',
             id: 1,
-            result: 'it works',
+            result: 'result from Infura',
           });
 
           const result = await withConnectionToInfuraNetwork(({ ethQuery }) =>
             callArbitraryRpcMethod({ ethQuery }),
           );
 
-          expect(result).toStrictEqual('it works');
+          expect(result).toStrictEqual('result from Infura');
         });
 
         it('throws an error if Infura never responds with 2xx', async () => {
           mockInfuraRequestsForProbeAndBlockTracker();
-          mockInfuraArbitraryRpcMethodCall()
+          mockArbitraryRpcMethodCallToInfura()
             .times(5)
             .reply('<html><p>Some error message</p></html>');
 
@@ -859,7 +1190,7 @@ describe('NetworkController provider tests', () => {
     describe('when the RPC method is "eth_getBlockByNumber"', () => {
       it('overrides the result with null when the response from Infura is 2xx but the response text is "Not Found"', async () => {
         mockInfuraRequestsForProbeAndBlockTracker();
-        mockInfuraRpcMethodCall({
+        mockRpcMethodCallToInfura({
           method: 'eth_getBlockByNumber',
           params: ['latest'],
         }).reply(200, 'Not Found');
