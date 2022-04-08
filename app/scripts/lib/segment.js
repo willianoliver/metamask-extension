@@ -1,6 +1,10 @@
 import Analytics from 'analytics-node';
 import { SECOND } from '../../../shared/constants/time';
 
+const isDevEnvironment = Boolean(
+  process.env.METAMASK_DEBUG && !process.env.IN_TEST,
+);
+
 const SEGMENT_WRITE_KEY = process.env.SEGMENT_WRITE_KEY ?? null;
 const SEGMENT_HOST = process.env.SEGMENT_HOST ?? null;
 
@@ -78,10 +82,11 @@ export const createSegmentMock = (flushAt = SEGMENT_FLUSH_AT) => {
   return segmentMock;
 };
 
-export const segment = SEGMENT_WRITE_KEY
-  ? new Analytics(SEGMENT_WRITE_KEY, {
-      host: SEGMENT_HOST,
-      flushAt: SEGMENT_FLUSH_AT,
-      flushInterval: SEGMENT_FLUSH_INTERVAL,
-    })
-  : createSegmentMock(SEGMENT_FLUSH_AT, SEGMENT_FLUSH_INTERVAL);
+export const segment =
+  SEGMENT_WRITE_KEY && !isDevEnvironment
+    ? new Analytics(SEGMENT_WRITE_KEY, {
+        host: SEGMENT_HOST,
+        flushAt: SEGMENT_FLUSH_AT,
+        flushInterval: SEGMENT_FLUSH_INTERVAL,
+      })
+    : createSegmentMock(SEGMENT_FLUSH_AT, SEGMENT_FLUSH_INTERVAL);
