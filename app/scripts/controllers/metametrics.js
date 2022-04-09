@@ -538,6 +538,7 @@ export default class MetaMetricsController {
         (rpc) => rpc.chainId,
       ),
       [TRAITS.NFT_AUTODETECTION_ENABLED]: metamaskState.useCollectibleDetection,
+      [TRAITS.NUMBER_OF_TOKENS]: Object.values(metamaskState.tokens).length,
       [TRAITS.NUMBER_OF_ACCOUNTS]: Object.values(metamaskState.identities)
         .length,
       [TRAITS.OPENSEA_API_ENABLED]: metamaskState.openSeaEnabled,

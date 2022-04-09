@@ -621,6 +621,7 @@ describe('MetaMetricsController', function () {
         ledgerTransportType: 'web-hid',
         openSeaEnabled: true,
         threeBoxSyncingAllowed: false,
+        tokens: [{}, {}, {}],
         useCollectibleDetection: false,
       });
 
@@ -629,6 +630,7 @@ describe('MetaMetricsController', function () {
         [TRAITS.NETWORKS_ADDED]: [MAINNET_CHAIN_ID, ROPSTEN_CHAIN_ID],
         [TRAITS.NFT_AUTODETECTION_ENABLED]: false,
         [TRAITS.NUMBER_OF_ACCOUNTS]: 2,
+        [TRAITS.NUMBER_OF_TOKENS]: 3,
         [TRAITS.OPENSEA_API_ENABLED]: true,
         [TRAITS.THREE_BOX_ENABLED]: false,
       });
@@ -644,6 +646,7 @@ describe('MetaMetricsController', function () {
         ledgerTransportType: 'web-hid',
         identities: [{}, {}],
         threeBoxSyncingAllowed: false,
+        tokens: [{}, {}, {}],
       });
 
       const updatedTraits = metaMetricsController._buildUserTraitsObject({
@@ -654,6 +657,7 @@ describe('MetaMetricsController', function () {
         ledgerTransportType: 'web-hid',
         identities: [{}, {}, {}],
         threeBoxSyncingAllowed: false,
+        tokens: [{}, {}, {}],
       });
 
       assert.deepEqual(updatedTraits, {
@@ -671,6 +675,7 @@ describe('MetaMetricsController', function () {
         ledgerTransportType: 'web-hid',
         identities: [{}, {}],
         threeBoxSyncingAllowed: false,
+        tokens: [{}, {}, {}],
       });
 
       const updatedTraits = metaMetricsController._buildUserTraitsObject({
@@ -681,6 +686,7 @@ describe('MetaMetricsController', function () {
         ledgerTransportType: 'web-hid',
         identities: [{}, {}],
         threeBoxSyncingAllowed: false,
+        tokens: [{}, {}, {}],
       });
 
       assert.equal(updatedTraits, null);
