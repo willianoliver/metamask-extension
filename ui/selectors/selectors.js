@@ -726,8 +726,8 @@ function getAllowedNotificationIds(state) {
     7: false,
     8: supportsWebHid && currentKeyringIsLedger && currentlyUsingLedgerLive,
     9: getIsMainnet(state),
-    10: Boolean(process.env.TOKEN_DETECTION_V2),
-    11: Boolean(process.env.TOKEN_DETECTION_V2),
+    10: Boolean(process.env.TOKEN_DETECTION_V2) && !process.env.IN_TEST,
+    11: Boolean(process.env.TOKEN_DETECTION_V2) && !process.env.IN_TEST,
   };
 }
 
@@ -962,5 +962,5 @@ export function getDetectedTokensInCurrentNetwork(state) {
  * @returns
  */
 export function getNewTokensImported(state) {
-  return state.appState.newTokensimported;
+  return state.appState.newTokensImported;
 }
